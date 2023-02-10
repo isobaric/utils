@@ -1,0 +1,22 @@
+{
+  "name": "horseloft/utils",
+  "type": "library",
+  "description": "Util Library For PHP",
+  "keywords": ["PHP", "CURL"],
+  "authors": [
+    {
+      "name": "YHC",
+      "homepage": "https://github.com/horseloft"
+    }
+  ],
+  "require": {
+    "php": ">=7.1",
+    "ext-curl": "*"
+  },
+  "autoload": {
+    "psr-4": {
+      "Horseloft\\Utils\\": "src"
+    }
+  },
+  "license": "MIT"
+}
