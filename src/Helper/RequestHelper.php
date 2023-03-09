@@ -7,17 +7,21 @@ use Throwable;
 
 abstract class RequestHelper
 {
+
     // 待验证的全部参数
     protected $verifyParams;
+
+    // 当前校验的条件 in/min/max/length/regex/mime
+    protected $verifyFactor;
+
+    // 参数的别名
+    protected $verifyAlias;
 
     // 当前校验的类型
     protected $verifyType;
 
     // 当前的校验规则
     protected $verifyRule;
-
-    // 当前校验规则的错误提示
-    protected $message = '';
 
     // 当前校验的字段值要求
     protected $verifyPermit;
@@ -123,7 +127,7 @@ abstract class RequestHelper
         if ($this->verifyPermit == 'must') {
             return $this->stringComplexVerify();
         }
-        // nullable/empty 参数值可以是Null和string
+        // nullable/empty 参数值可以是Null/string/空
         if (is_null($this->paramValue)) {
             return true;
         }
@@ -229,13 +233,13 @@ abstract class RequestHelper
     protected function isRegular(array $regular): bool
     {
         if ($this->verifyPermit == 'must') {
-            return $this->pregComplexVerify($regular);
+            return $this->regexComplexVerify($regular);
         }
         // nullable/empty 参数值可以是Null和json
         if (is_null($this->paramValue)) {
             return true;
         }
-        return $this->pregComplexVerify($regular);
+        return $this->regexComplexVerify($regular);
     }
 
     /**
@@ -247,23 +251,27 @@ abstract class RequestHelper
     private function numberComplexVerify(bool $isInt = true): bool
     {
         // 必须是整数
+        $this->verifyFactor = 'int';
         if ($isInt && !is_int($this->paramValue)) {
             return false;
         }
         // 必须是数字
+        $this->verifyFactor = 'number';
         if (!$isInt && !is_numeric($this->paramValue)) {
             return false;
         }
         // in条件校验规则
+        $this->verifyFactor = 'in';
         $inValue = array_filter($this->getVerifyInValue(), function ($item) use ($isInt) {
             return $isInt ? is_int($item) : is_numeric($item);
         });
         if (!empty($inValue) && !in_array($this->paramValue, $inValue, true)) {
             return false;
         }
-        // preg
-        $preg = $this->getVerifyPregValue();
-        if (!is_null($preg) && !preg_match($preg, $this->paramValue)) {
+        // regex
+        $this->verifyFactor = 'regex';
+        $regex = $this->getVerifyRegexValue();
+        if (!is_null($regex) && !preg_match($regex, $this->paramValue)) {
             return false;
         }
         // min max length
@@ -278,19 +286,22 @@ abstract class RequestHelper
      */
     private function stringComplexVerify(): bool
     {
+        $this->verifyFactor = 'string';
         if (!is_string($this->paramValue)) {
             return false;
         }
         // in条件校验规则
+        $this->verifyFactor = 'in';
         $inValue = array_filter($this->getVerifyInValue(), function ($item) {
             return is_string($item);
         });
         if (!empty($inValue) && !in_array($this->paramValue, $inValue, true)) {
             return false;
         }
-        // preg
-        $preg = $this->getVerifyPregValue();
-        if (!is_null($preg) && !preg_match($preg, $this->paramValue)) {
+        // regex
+        $this->verifyFactor = 'regex';
+        $regex = $this->getVerifyRegexValue();
+        if (!is_null($regex) && !preg_match($regex, $this->paramValue)) {
             return false;
         }
         // min max length
@@ -304,6 +315,7 @@ abstract class RequestHelper
      */
     private function arrayComplexVerify(): bool
     {
+        $this->verifyFactor = 'array';
         if (!is_array($this->paramValue)) {
             return false;
         }
@@ -317,6 +329,7 @@ abstract class RequestHelper
      */
     private function listComplexVerify(): bool
     {
+        $this->verifyFactor = 'list';
         if (!is_array($this->paramValue)) {
             return false;
         }
@@ -337,11 +350,13 @@ abstract class RequestHelper
      */
     private function dateComplexVerify(): bool
     {
+        $this->verifyFactor = 'date';
         $format = $this->getVerifyDateFormat();
         if (!$this->isDateValue($this->paramValue, $format)) {
             return false;
         }
         // in条件校验规则
+        $this->verifyFactor = 'in';
         $inValue = array_filter($this->getVerifyInValue(), function ($item) use($format) {
             return $this->isDateValue($item, $format);
         });
@@ -350,23 +365,27 @@ abstract class RequestHelper
         }
         $timestamp = $this->getVerifyDateTimestamp($this->paramValue, $format);
         // min
+        $this->verifyFactor = 'min';
         $min = $this->getVerifyDateValue('min', $format);
         if (!is_null($min) && $timestamp < $min) {
             return false;
         }
         // max
+        $this->verifyFactor = 'max';
         $max = $this->getVerifyDateValue('max', $format);
-        if (!is_null($min) && $timestamp > $max) {
+        if (!is_null($max) && $timestamp > $max) {
             return false;
         }
         // length
+        $this->verifyFactor = 'length';
         $length = $this->getVerifyIntValue('length', true);
-        if (!is_null($length) && $length != strlen($this->paramValue)) {
+        if (!is_null($length) && $length != mb_strlen($this->paramValue)) {
             return false;
         }
-        // preg
-        $preg = $this->getVerifyPregValue();
-        if (!is_null($preg) && !preg_match($preg, $this->paramValue)) {
+        // regex
+        $this->verifyFactor = 'regex';
+        $regex = $this->getVerifyRegexValue();
+        if (!is_null($regex) && !preg_match($regex, $this->paramValue)) {
             return false;
         }
         return true;
@@ -399,25 +418,30 @@ abstract class RequestHelper
         }
         for ($key = 0; $key < $fileNumber; $key++) {
             // 判断文件是否真实上传
+            $this->verifyFactor = 'upload';
             if (!is_uploaded_file($this->paramValue['tmp_name'][$key])) {
                 return false;
             }
             // 上传发生错误
+            $this->verifyFactor = 'file_error';
             if ($this->paramValue['error'][$key] > 0) {
                 return false;
             }
             // MIME校验
+            $this->verifyFactor = 'mime';
             $fileMime = mime_content_type($this->paramValue['tmp_name'][$key]);
             $mine = $this->getVerifyMimeValue();
             if (!empty($mine) && !in_array($fileMime, $mine)) {
                 return false;
             }
             // 上传文件最小size
+            $this->verifyFactor = 'min';
             $min = $this->getVerifyIntValue('min', true);
             if (!is_null($min) && $this->paramValue['size'][$key] < $min) {
                 return false;
             }
             // 上传文件最大size
+            $this->verifyFactor = 'max';
             $max = $this->getVerifyIntValue('max', true);
             if (!is_null($max) && $this->paramValue['size'][$key] > $max) {
                 return false;
@@ -468,21 +492,21 @@ abstract class RequestHelper
      * @param array $regular
      * @return bool
      */
-    private function pregComplexVerify(array $regular): bool
+    private function regexComplexVerify(array $regular): bool
     {
-        // preg
-        $preg = $this->getVerifyPregValue();
-        if (is_null($preg)) {
+        $regex = $this->getVerifyRegexValue();
+        if (is_null($regex)) {
             $pattern = $regular;
         } else {
-            $pattern = [$preg];
+            $pattern = [$regex];
         }
-        if (!$this->isPregValue($pattern, $this->paramValue)) {
+        if (!$this->isRegexValue($pattern, $this->paramValue)) {
             return false;
         }
         // in条件校验规则
+        $this->verifyFactor = 'in';
         $inValue = array_filter($this->getVerifyInValue(), function ($item) use ($pattern) {
-            return $this->isPregValue($pattern, $item);
+            return $this->isRegexValue($pattern, $item);
         });
         if (!empty($inValue) && !in_array($this->paramValue, $inValue, true)) {
             return false;
@@ -503,16 +527,19 @@ abstract class RequestHelper
     private function numberCompare($number, bool $isPositive = false, bool $isInt = true): bool
     {
         // min
+        $this->verifyFactor = 'min';
         $min = $isInt ? $this->getVerifyIntValue('min', $isPositive) : $this->getVerifyNumericValue('min');
         if (!is_null($min) && $number < $min) {
             return false;
         }
         // max
+        $this->verifyFactor = 'max';
         $max = $isInt ? $this->getVerifyIntValue('max', $isPositive) : $this->getVerifyNumericValue('max');
         if (!is_null($max) && $number > $max) {
             return false;
         }
         // length
+        $this->verifyFactor = 'length';
         $length = $this->getVerifyIntValue('length', $isPositive);
         if (!is_null($length) && $number != $length) {
             return false;
@@ -553,14 +580,14 @@ abstract class RequestHelper
     }
 
     /**
-     * 获取校验规则中preg的值
+     * 获取校验规则中regex的值
      *
      * @return string|null
      */
-    private function getVerifyPregValue(): ?string
+    private function getVerifyRegexValue(): ?string
     {
-        if (array_key_exists('preg', $this->verifyRule) && (is_string($this->verifyRule['preg']))) {
-            return $this->verifyRule['preg'];
+        if (array_key_exists('regex', $this->verifyRule) && (is_string($this->verifyRule['regex']))) {
+            return $this->verifyRule['regex'];
         }
         return null;
     }
@@ -647,7 +674,7 @@ abstract class RequestHelper
     private function isDateValue(string $string, string $format): bool
     {
         $date = DateTime::createFromFormat($format, $string);
-        return $date && $date->format($format) == $date;
+        return $date && $date->format($format) == $string;
     }
 
     /**
@@ -658,10 +685,10 @@ abstract class RequestHelper
      *
      * @return bool
      */
-    private function isPregValue(array $pattern, string $value): bool
+    private function isRegexValue(array $pattern, string $value): bool
     {
-        foreach ($pattern as $preg) {
-            if (preg_match($preg, $value)){
+        foreach ($pattern as $regex) {
+            if (preg_match($regex, $value)){
                 return true;
             }
         }

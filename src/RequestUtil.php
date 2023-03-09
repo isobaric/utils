@@ -13,6 +13,11 @@ class RequestUtil extends VerifyHelper
      *     must 参数必须存在，并且值不能为Null
      *     nullable 参数必须存在，允许参数值为Null
      *     empty 参数可以不存在，并允许参数值不存在或null
+     * alias:
+     *  说明：参数的别名
+     *  格式：string
+     *  适用于全部type
+     *  作用：当verify()方法返回值等于false时，getMessage()方法返回当前名称及错误描述
      *
      * type:
      *  格式：字符串
@@ -61,10 +66,10 @@ class RequestUtil extends VerifyHelper
      *  适用于type: array/list
      *      作用：以总数计算的方式限定元素数等于length，list的计算深度为1(length值是int类型且大于0时有效)
      *
-     * preg:
+     * regex:
      *  格式: string
      *  适用于type: int/numeric/string/date/email/url/ip
-     *      email/url/ip 优先使用preg校验
+     *      email/url/ip 优先使用regex校验
      *  作用：限定参数格式符合该正则
      *
      * format:
@@ -77,11 +82,6 @@ class RequestUtil extends VerifyHelper
      *  格式：array
      *  适用于type: file
      *  作用：限定上传文件的mime格式
-     *
-     * message:
-     *  格式：string
-     *  适用于全部type
-     *  作用：当verify()方法返回值等于false时，getMessage()方法返回当前message
      */
     public function __construct()
     {
@@ -93,7 +93,7 @@ class RequestUtil extends VerifyHelper
      */
     final public function getMessage(): string
     {
-        return $this->message;
+        return $this->getFalseMessage();
     }
 
     /**
@@ -106,6 +106,7 @@ class RequestUtil extends VerifyHelper
      */
     final public function verify(array $params, array $rules): bool
     {
+        $this->verifyFactor = null;
         // 校验规则或者参数为空 不校验
         if (empty($rules) || empty($params)) {
             return true;
@@ -114,15 +115,16 @@ class RequestUtil extends VerifyHelper
 
         // 校验
         foreach ($rules as $field => $rule) {
+            $this->verifyFactor = null;
             // 当前校验规则
             $this->verifyRule = $rule;
-            // 字段值要求校验
-            if (!$this->verifyPermit($field)) {
-                return false;
-            }
             // 参数类型校验
             if (!$this->verifyType()) {
                 continue;
+            }
+            // 字段值要求校验
+            if (!$this->verifyPermit($field)) {
+                return false;
             }
             // 参数值校验
             if (!$this->verifyParamsValue()) {
