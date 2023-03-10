@@ -191,7 +191,6 @@ abstract class VerifyHelper extends RequestHelper
                         break;
                 }
                 break;
-
         }
         switch ($this->verifyFactor) {
             case 'in':

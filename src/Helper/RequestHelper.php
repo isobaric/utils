@@ -7,7 +7,6 @@ use Throwable;
 
 abstract class RequestHelper
 {
-
     // 待验证的全部参数
     protected $verifyParams;
 
@@ -29,13 +28,25 @@ abstract class RequestHelper
     // 当前校验的参数的值
     protected $paramValue;
 
-    // 当前校验的文件名称（不含后缀）
+    /**
+     * 当前校验的文件名称（不含后缀）
+     *
+     * @var array|string|null
+     */
     public $filename;
 
-    // 当前校验的文件后缀名
+    /**
+     * 当前校验的文件后缀名
+     *
+     * @var array|string|null
+     */
     public $extension;
 
-    // 当前校验的文件MIME
+    /**
+     * 当前校验的文件MIME
+     *
+     * @var array|string|null
+     */
     public $mime;
 
     /**
