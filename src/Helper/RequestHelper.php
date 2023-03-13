@@ -28,6 +28,9 @@ abstract class RequestHelper
     // 当前校验的参数的值
     protected $paramValue;
 
+    // 当前校验的参数的值
+    protected $paramKey;
+
     /**
      * 当前校验的文件名称（不含后缀）
      *
@@ -74,6 +77,7 @@ abstract class RequestHelper
         'nullable',
         'empty',
         'must',
+        'lost'
     ];
 
     /**
@@ -83,66 +87,47 @@ abstract class RequestHelper
      */
     protected function isBool(): bool
     {
-        // must 参数的值必须是bool类型
-        if ($this->verifyPermit == 'must') {
-            return is_bool($this->paramValue);
+        switch ($this->verifyPermit) {
+            case 'must':
+                return is_bool($this->paramValue);
+            case 'empty':
+                return is_bool($this->paramValue) || $this->isEmptyString();
+            case 'nullable':
+                return is_bool($this->paramValue) || is_null($this->paramValue);
+            default:
+                if (array_key_exists($this->paramKey, $this->verifyParams)) {
+                    return is_bool($this->paramValue) || is_null($this->paramValue) || $this->isEmptyString();
+                }
+                return true;
         }
-        // nullable/empty 参数值可以是Null和bool
-        return in_array($this->paramValue, [null, false, true], true);
     }
 
     /**
-     * 判断整数
+     * 通用校验
      *
-     * @return bool
-     */
-    protected function isInt(): bool
-    {
-        // 值必须是int
-        if ($this->verifyPermit == 'must') {
-            return $this->numberComplexVerify();
-        }
-        // nullable/empty 参数值可以是Null和int
-        if (is_null($this->paramValue)) { // 如果允许Null值，并且值为Null，则不再校验其他规则
-            return true;
-        }
-        return $this->numberComplexVerify();
-    }
-
-    /**
-     * 判断数字
+     * @param string $type
+     * @param string $call
+     * @param null $args
      *
-     * @return bool
+     * @return bool|mixed
      */
-    protected function isNumeric(): bool
+    protected function multipleVerify(string $type, string $call, $args = null)
     {
-        // 值必须是数字
-        if ($this->verifyPermit == 'must') {
-            return $this->numberComplexVerify(false);
+        switch ($this->verifyPermit) {
+            case 'must':
+                return call_user_func([$this, $call], $args);
+            case 'empty':
+                // todo
+                //$this->numberComplexVerify(false);
+                return $this->isEmptyString() || call_user_func([$this, $call], $args);
+            case 'nullable':
+                return is_null($this->paramValue) || call_user_func([$this, $call], $args);
+            default:
+                if (array_key_exists($this->paramKey, $this->verifyParams)) {
+                    return is_null($this->paramValue) || $this->isEmptyString() || call_user_func([$this, $call], $args);
+                }
+                return true;
         }
-        // nullable/empty 参数值可以是Null和numeric
-        if (is_null($this->paramValue)) { // 如果允许Null值，并且值为Null，则不再校验其他规则
-            return true;
-        }
-        return $this->numberComplexVerify(false);
-    }
-
-    /**
-     * 判断字符串
-     *
-     * @return bool
-     */
-    protected function isString(): bool
-    {
-        // 值必须是字符串
-        if ($this->verifyPermit == 'must') {
-            return $this->stringComplexVerify();
-        }
-        // nullable/empty 参数值可以是Null/string/空
-        if (is_null($this->paramValue)) {
-            return true;
-        }
-        return $this->stringComplexVerify();
     }
 
     /**
@@ -152,15 +137,22 @@ abstract class RequestHelper
      */
     protected function isArray(): bool
     {
-        // 值必须是字符串
-        if ($this->verifyPermit == 'must') {
-            return $this->arrayComplexVerify();
+        $this->verifyFactor = 'array';
+        switch ($this->verifyPermit) {
+            case 'must':
+                return $this->arrayComplexVerify();
+            case 'empty':
+                return (is_array($this->paramValue) && empty($this->paramValue)) || $this->arrayComplexVerify();
+            case 'nullable':
+                return is_null($this->paramValue) || $this->arrayComplexVerify();
+            default:
+                if (array_key_exists($this->paramKey, $this->verifyParams)) {
+                    return is_null($this->paramValue)
+                        || (is_array($this->paramValue) && empty($this->paramValue))
+                        || $this->arrayComplexVerify();
+                }
+                return true;
         }
-        // nullable/empty 参数值可以是Null和array
-        if (is_null($this->paramValue)) {
-            return true;
-        }
-        return $this->arrayComplexVerify();
     }
 
     /**
@@ -170,87 +162,22 @@ abstract class RequestHelper
      */
     protected function isList(): bool
     {
-        // 值必须是字符串
-        if ($this->verifyPermit == 'must') {
-            return $this->listComplexVerify();
+        $this->verifyFactor = 'list';
+        switch ($this->verifyPermit) {
+            case 'must':
+                return $this->listComplexVerify();
+            case 'empty':
+                return (is_array($this->paramValue) && empty($this->paramValue)) || $this->listComplexVerify();
+            case 'nullable':
+                return is_null($this->paramValue) || $this->listComplexVerify();
+            default:
+                if (array_key_exists($this->paramKey, $this->verifyParams)) {
+                    return is_null($this->paramValue)
+                        || (is_array($this->paramValue) && empty($this->paramValue))
+                        || $this->listComplexVerify();
+                }
+                return true;
         }
-        // nullable/empty 参数值可以是Null和list
-        if (is_null($this->paramValue)) {
-            return true;
-        }
-        return $this->listComplexVerify();
-    }
-
-    /**
-     * 日期格式校验
-     *
-     * @return bool
-     */
-    protected function isDate(): bool
-    {
-        // 值必须是日期
-        if ($this->verifyPermit == 'must') {
-            return $this->dateComplexVerify();
-        }
-        // nullable/empty 参数值可以是Null和date
-        if (is_null($this->paramValue)) {
-            return true;
-        }
-        return $this->dateComplexVerify();
-    }
-
-    /**
-     * 文件校验
-     *
-     * @return bool
-     */
-    protected function isFile(): bool
-    {
-        // 值必须是文件
-        if ($this->verifyPermit == 'must') {
-            return $this->fileComplexVerify();
-        }
-        // nullable/empty 参数值可以是Null和date
-        if (is_null($this->paramValue)) {
-            return true;
-        }
-        return $this->fileComplexVerify();
-    }
-
-    /**
-     * 验证JSON字符串
-     *
-     * @return bool
-     */
-    protected function isJson(): bool
-    {
-        if ($this->verifyPermit == 'must') {
-            return $this->jsonComplexVerify();
-        }
-        // nullable/empty 参数值可以是Null和json
-        if (is_null($this->paramValue)) {
-            return true;
-        }
-        return $this->jsonComplexVerify();
-    }
-
-    /**
-     * 正则验证
-     *  用于email url ip的校验
-     *
-     * @param array $regular
-     * @return bool
-     */
-    protected function isRegular(array $regular): bool
-    {
-        if ($this->verifyPermit == 'must') {
-            return $this->regexComplexVerify($regular);
-        }
-        // nullable/empty 参数值可以是Null和json
-        if (is_null($this->paramValue)) {
-            return true;
-        }
-        return $this->regexComplexVerify($regular);
     }
 
     /**
@@ -259,22 +186,20 @@ abstract class RequestHelper
      * @param bool $isInt
      * @return bool
      */
-    private function numberComplexVerify(bool $isInt = true): bool
+    private function numberComplexVerify(bool $isInt): bool
     {
-        // 必须是整数
         $this->verifyFactor = 'int';
-        if ($isInt && !is_int($this->paramValue)) {
+        if ($isInt && !$this->isIntNumber($this->paramValue)) {
             return false;
         }
-        // 必须是数字
-        $this->verifyFactor = 'number';
+        $this->verifyFactor = 'numeric';
         if (!$isInt && !is_numeric($this->paramValue)) {
             return false;
         }
         // in条件校验规则
         $this->verifyFactor = 'in';
         $inValue = array_filter($this->getVerifyInValue(), function ($item) use ($isInt) {
-            return $isInt ? is_int($item) : is_numeric($item);
+            return $isInt ? $this->isIntNumber($item) : is_numeric($item);
         });
         if (!empty($inValue) && !in_array($this->paramValue, $inValue, true)) {
             return false;
@@ -292,19 +217,18 @@ abstract class RequestHelper
     /**
      * 字符串类型的其他规则校验
      *
-     *
      * @return bool
      */
     private function stringComplexVerify(): bool
     {
-        $this->verifyFactor = 'string';
-        if (!is_string($this->paramValue)) {
+        // 允许是字符串或者数字
+        if (!is_string($this->paramValue) && !is_numeric($this->paramValue)) {
             return false;
         }
         // in条件校验规则
         $this->verifyFactor = 'in';
         $inValue = array_filter($this->getVerifyInValue(), function ($item) {
-            return is_string($item);
+            return is_string($item) || is_numeric($item);
         });
         if (!empty($inValue) && !in_array($this->paramValue, $inValue, true)) {
             return false;
@@ -326,7 +250,6 @@ abstract class RequestHelper
      */
     private function arrayComplexVerify(): bool
     {
-        $this->verifyFactor = 'array';
         if (!is_array($this->paramValue)) {
             return false;
         }
@@ -340,7 +263,6 @@ abstract class RequestHelper
      */
     private function listComplexVerify(): bool
     {
-        $this->verifyFactor = 'list';
         if (!is_array($this->paramValue)) {
             return false;
         }
@@ -361,7 +283,6 @@ abstract class RequestHelper
      */
     private function dateComplexVerify(): bool
     {
-        $this->verifyFactor = 'date';
         $format = $this->getVerifyDateFormat();
         if (!$this->isDateValue($this->paramValue, $format)) {
             return false;
@@ -704,5 +625,32 @@ abstract class RequestHelper
             }
         }
         return false;
+    }
+
+    /**
+     * 是否空字符串
+     *
+     * @return bool
+     */
+    private function isEmptyString(): bool
+    {
+        return (is_string($this->paramValue) || is_numeric($this->paramValue)) && mb_strlen($this->paramValue) == 0;
+    }
+
+    /**
+     * 是否是整数
+     *
+     * @param $number
+     * @return bool
+     */
+    private function isIntNumber($number): bool
+    {
+        if (is_int($number)) {
+            return true;
+        }
+        if (!is_numeric($number)) {
+            return false;
+        }
+        return intval($number) == $number;
     }
 }

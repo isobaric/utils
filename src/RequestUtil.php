@@ -10,9 +10,21 @@ class RequestUtil extends VerifyHelper
      * permit:
      *  格式：字符串
      *  有效值：must/nullable/empty
-     *     must 参数必须存在，并且值不能为Null
+     *     must 参数必须存在，并且值不能为空（默认值）
+     *         type == bool : 参数格式必须是bool类型
+     *         type == int : 参数格式必须是int类型
+     *         type == numeric : 参数格式必须是numeric类型
+     *         type == date : 参数格式必须是numeric类型
+     *         type == array/list : 必须是非空数组
+     *         type == 其他 : 必须是非空字符串
+     *
+     *     empty 参数必须存在，并允许参数值为空
+     *         type == bool/int/numeric/string/date/file/email/json/url/ip : 参数允许为空字符串
+     *         type == array/list : 允许空数组
+     *
      *     nullable 参数必须存在，允许参数值为Null
-     *     empty 参数可以不存在，并允许参数值不存在或null
+     *     lost 参数可以不存在，值可以为Null或者空
+     *
      * alias:
      *  说明：参数的别名
      *  格式：string
@@ -23,6 +35,9 @@ class RequestUtil extends VerifyHelper
      *  格式：字符串
      *  有效值：bool/int/numeric/string/array/list/date/file/email/json/url/ip
      *  作用：限定参数的格式
+     *         int == int/字符串整数
+     *         numeric == int/float/字符串数字
+     *         string == int/numeric/字符串
      *
      * in:
      *  格式：array
@@ -118,13 +133,11 @@ class RequestUtil extends VerifyHelper
             $this->verifyFactor = null;
             // 当前校验规则
             $this->verifyRule = $rule;
-            // 参数类型校验
-            if (!$this->verifyType()) {
-                continue;
-            }
+            // 当前校验的字段名
+            $this->paramKey = $field;
             // 字段值要求校验
-            if (!$this->verifyPermit($field)) {
-                return false;
+            if (!$this->fieldInitialize()) {
+                continue;
             }
             // 参数值校验
             if (!$this->verifyParamsValue()) {

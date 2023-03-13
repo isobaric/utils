@@ -33,47 +33,48 @@ abstract class VerifyHelper extends RequestHelper
         '/^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$'
     ];
 
-    /**
-     * 校验字段要求
-     *
-     * @param $field
-     *
-     * @return bool
-     */
-    protected function verifyPermit($field): bool
-    {
-        // 校验字段要求
-        $this->verifyPermit = $this->verifyRule['permit'] ?? 'must';
-        if (!in_array($this->verifyPermit, $this->defaultPermit, true)) {
-            return true;
-        }
-        // 当前校验的参数的值
-        $this->paramValue = $this->verifyParams[$field] ?? null;
-        // 当前校验的参数别名
-        $this->verifyAlias = $this->verifyRule['alias'] ?? $field;
-        // 必传参数和值，值不能为Null
-        if ($this->verifyPermit == 'must' && is_null($this->paramValue)) {
-            return false;
-        }
-        // 必传参数，值非必传
-        if ($this->verifyPermit == 'nullable' && !array_key_exists($field, $this->verifyParams)) {
-            return false;
-        }
-        return true;
-    }
+    // 校验方法
+    private $stringVerify = 'stringComplexVerify';
+
+    //
+    private $dateVerify = 'dateComplexVerify';
+
+    //
+    private $fileVerify = 'fileComplexVerify';
+
+    //
+    private $regexVerify = 'regexComplexVerify';
+
+    //
+    private $jsonVerify = 'jsonComplexVerify';
+
+    //
+    private $numberVerify = 'numberComplexVerify';
 
     /**
-     * 参数类型校验
+     * 初始化校验字段
      *
      * @return bool
      */
-    protected function verifyType(): bool
+    protected function fieldInitialize(): bool
     {
         // 没有指定参数类型 或者 参数类型不在指定的范围内，则不校验
         if (!isset($this->verifyRule['type']) || !in_array($this->verifyRule['type'], $this->defaultType, true)) {
             return false;
         }
+        // 校验字段要求
+        $this->verifyPermit = $this->verifyRule['permit'] ?? 'must';
+        if (!in_array($this->verifyPermit, $this->defaultPermit, true)) {
+            return false;
+        }
+        // 当前校验的参数的类型
         $this->verifyType = $this->verifyRule['type'];
+        // 当前校验的条件
+        $this->verifyFactor = $this->verifyType;
+        // 当前校验的参数的值
+        $this->paramValue = $this->verifyParams[$this->paramKey] ?? null;
+        // 当前校验的参数别名
+        $this->verifyAlias = $this->verifyRule['alias'] ?? $this->paramKey;
         return true;
     }
 
@@ -88,34 +89,43 @@ abstract class VerifyHelper extends RequestHelper
             case 'bool':
                 return $this->isBool();
             case 'int':
-                return $this->isInt();
+                //return $this->isInt();
+                return $this->multipleVerify('int', $this->numberVerify, true);
             case 'numeric':
-                return $this->isNumeric();
+                //return $this->isNumeric();
+                return $this->multipleVerify('numeric', $this->numberVerify, false);
             case 'string':
-                return $this->isString();
+                //return $this->isString();
+                return $this->multipleVerify('string', $this->stringVerify);
             case 'array':
                 return $this->isArray();
             case 'list':
                 return $this->isList();
             case 'date':
-                return $this->isDate();
+                //return $this->isDate();
+                return $this->multipleVerify('date', $this->dateVerify);
             case 'file':
-               return $this->isFile();
+               //return $this->isFile();
+               return $this->multipleVerify('file', $this->fileVerify);
             case 'email':
-                return $this->isRegular($this->emailDefaultRegex);
+                //return $this->isRegular($this->emailDefaultRegex);
+                return $this->multipleVerify('email', $this->regexVerify, $this->emailDefaultRegex);
             case 'json':
-                return $this->isJson();
+                //return $this->isJson();
+                return $this->multipleVerify('json', $this->jsonVerify);
             case 'url':
-                return $this->isRegular($this->urlDefaultRegex);
+                //return $this->isRegular($this->urlDefaultRegex);
+                return $this->multipleVerify('email', $this->regexVerify, $this->urlDefaultRegex);
             case 'ip':
-                return $this->isRegular($this->ipDefaultRegex);
+                //return $this->isRegular($this->ipDefaultRegex);
+                return $this->multipleVerify('email', $this->regexVerify, $this->ipDefaultRegex);
             default:
                 return true;
         }
     }
 
     /**
-     * 参数校验失败的错误说明
+     * 参数校验失败的错误说明 todo
      *
      * @return string
      */
@@ -124,101 +134,145 @@ abstract class VerifyHelper extends RequestHelper
         $message = '';
         switch ($this->verifyType) {
             case 'bool':
-                $message .= '格式错误';
+                $message = $this->getGeneralMessage();
                 break;
             case 'int':
             case 'numeric':
-                switch ($this->verifyFactor) {
-                    case 'min':
-                        $message .= '不能小于' . $this->verifyRule['min'];
-                        break;
-                    case 'max':
-                        $message .= '不能大于' . $this->verifyRule['max'];
-                        break;
-                    case 'int':
-                        $message .= '必须是整数';
-                        break;
-                    case 'number':
-                        $message .= '必须是数字';
-                        break;
-                }
+                $message = $this->getNumberMessage();
                 break;
             case 'string':
             case 'email':
             case 'json':
             case 'url':
             case 'ip':
-                switch ($this->verifyFactor) {
-                    case 'min':
-                        $message .= '长度不能小于' . $this->verifyRule['min'];
-                        break;
-                    case 'max':
-                        $message .= '长度不能大于' . $this->verifyRule['max'];
-                        break;
-                    case 'string':
-                        $message .= '必须是字符串';
-                        break;
-                }
-                break;
+                $message = $this->getStringMessage();
+            break;
             case 'array':
             case 'list':
-                switch ($this->verifyFactor) {
-                    case 'min':
-                        $message .= '元素数量不能小于' . $this->verifyRule['min'];
-                        break;
-                    case 'max':
-                        $message .= '元素数量不能大于' . $this->verifyRule['max'];
-                        break;
-                }
-                break;
+                $message = $this->getArrayMessage();
+            break;
             case 'date':
-                switch ($this->verifyFactor) {
-                    case 'min':
-                        $message .= '应该是' . $this->verifyRule['min'] . '及以后的日期';
-                        break;
-                    case 'max':
-                        $message .= '应该是' . $this->verifyRule['max'] . '及以前的日期';
-                        break;
-                }
+                $message = $this->getDateMessage();
                 break;
             case 'file':
-                switch ($this->verifyFactor) {
-                    case 'min':
-                        $message .= '不能小于' . $this->verifyRule['min'] . 'KB';
-                        break;
-                    case 'max':
-                        $message .= '不能超过' . $this->verifyRule['max'] . 'KB';
-                        break;
-                }
-                break;
-        }
-        switch ($this->verifyFactor) {
-            case 'in':
-            case 'date':
-            case 'mime':
-                $message .= '无效';
-                break;
-            case 'regex':
-                $message .= '格式错误';
-                break;
-            case 'length':
-                if (in_array($this->verifyType, ['array', 'list'])) {
-                    $message .= '元素数量必须是' . $this->verifyRule['length'];
-                } else {
-                    $message .= '长度必须是' . $this->verifyRule['length'];
-                }
-                break;
-        }
-        if ($message == '') {
-            switch ($this->verifyPermit) {
-                case 'must':
-                    $message .= '不能为空';
-                    break;
-                case 'nullable':
-                    $message .= '必须存在';
-                    break;
-            }
+                $message = $this->getFileMessage();
         }
         return $this->verifyAlias . $message;
+    }
+
+    /**
+     * 数字提示
+     *
+     * @return string
+     */
+    private function getNumberMessage(): string
+    {
+        switch ($this->verifyFactor) {
+            case 'min':
+                return '不能小于' . $this->verifyRule['min'];
+            case 'max':
+                return '不能大于' . $this->verifyRule['max'];
+            case 'int':
+                return '必须是整数';
+            case 'numeric':
+                return '必须是数字';
+        }
+        return $this->getGeneralMessage();
+    }
+
+    /**
+     * 字符串提示
+     *
+     * @return string
+     */
+    private function getStringMessage(): string
+    {
+        switch ($this->verifyFactor) {
+            case 'min':
+                return '长度不能小于' . $this->verifyRule['min'];
+            case 'max':
+                return '长度不能大于' . $this->verifyRule['max'];
+            case 'string':
+                return '必须是字符串';
+        }
+        return $this->getGeneralMessage();
+    }
+
+    /**
+     * 数组提示
+     *
+     * @return string
+     */
+    private function getArrayMessage(): string
+    {
+        switch ($this->verifyFactor) {
+            case 'min':
+                return '元素数量不能小于' . $this->verifyRule['min'];
+            case 'max':
+                return '元素数量不能大于' . $this->verifyRule['max'];
+        }
+        return $this->getGeneralMessage();
+    }
+
+    /**
+     * 日期提示
+     *
+     * @return string
+     */
+    private function getDateMessage(): string
+    {
+        switch ($this->verifyFactor) {
+            case 'min':
+                return '应该是' . $this->verifyRule['min'] . '及以后的日期';
+            case 'max':
+                return '应该是' . $this->verifyRule['max'] . '及以前的日期';
+        }
+        return $this->getGeneralMessage();
+    }
+
+    /**
+     * 文件提示
+     *
+     * @return string
+     */
+    private function getFileMessage(): string
+    {
+        switch ($this->verifyFactor) {
+            case 'min':
+                return'不能小于' . $this->verifyRule['min'] . 'KB';
+            case 'max':
+                return '不能超过' . $this->verifyRule['max'] . 'KB';
+        }
+        return $this->getGeneralMessage();
+    }
+
+    /**
+     * 通用提示
+     *
+     * @return string
+     */
+    private function getGeneralMessage(): string
+    {
+        switch ($this->verifyFactor) {
+            case 'regex':
+                return '格式错误';
+            case 'length':
+                if (in_array($this->verifyType, ['array', 'list'])) {
+                    return '元素数量必须是' . $this->verifyRule['length'];
+                } else {
+                    return '长度必须是' . $this->verifyRule['length'];
+                }
+        }
+        switch ($this->verifyPermit) {
+            case 'must':
+                if (is_null($this->paramValue)) {
+                    return '不能为空';
+                }
+                return '格式错误';
+            case 'empty':
+            case 'nullable':
+                return '格式错误';
+        }
+        return '无效';
     }
 }
