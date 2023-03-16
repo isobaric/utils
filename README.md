@@ -9,3 +9,6 @@
 
 ## v1.1.0
 1. 新增 RequestUtil 验证类
+
+## v1.1.1
+1. 优化 RequestUtil
