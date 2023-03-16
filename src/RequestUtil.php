@@ -126,24 +126,31 @@ class RequestUtil extends VerifyHelper
         if (empty($rules) || empty($params)) {
             return true;
         }
-        $this->verifyParams = $params;
-
         // 校验
         foreach ($rules as $field => $rule) {
-            $this->verifyFactor = null;
-            // 当前校验规则
-            $this->verifyRule = $rule;
-            // 当前校验的字段名
-            $this->paramKey = $field;
-            // 字段值要求校验
-            if (!$this->fieldInitialize()) {
+            if ($this->paramFilter($params, $rule, $field)) {
                 continue;
             }
-            // 参数值校验
-            if (!$this->verifyParamsValue()) {
-                return false;
-            }
+            return false;
         }
         return true;
+    }
+
+    /**
+     * 校验单个参数
+     *
+     * @param array $params
+     * @param array $rule
+     * @param string $field
+     *
+     * @return bool
+     */
+    final public function check(array $params, array $rule, string $field): bool
+    {
+        // 校验规则或者参数为空 不校验
+        if (empty($rule) || empty($params)) {
+            return true;
+        }
+        return $this->paramFilter($params, $rule, $field);
     }
 }

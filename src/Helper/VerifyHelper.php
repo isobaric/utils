@@ -52,6 +52,32 @@ abstract class VerifyHelper extends RequestHelper
     private $numberVerify = 'numberComplexVerify';
 
     /**
+     * 校验参数
+     *
+     * @param array $params
+     * @param array $rule
+     * @param string $field
+     *
+     * @return bool
+     */
+    protected function paramFilter(array $params, array $rule, string $field): bool
+    {
+        $this->verifyFactor = null;
+
+        $this->verifyParams = $params;
+        // 当前校验规则
+        $this->verifyRule = $rule;
+        // 当前校验的字段名
+        $this->paramKey = $field;
+        // 字段值要求校验
+        if (!$this->fieldInitialize()) {
+            return true;
+        }
+        // 参数值校验
+        return $this->verifyParamsValue();
+    }
+
+    /**
      * 初始化校验字段
      *
      * @return bool
@@ -89,35 +115,26 @@ abstract class VerifyHelper extends RequestHelper
             case 'bool':
                 return $this->isBool();
             case 'int':
-                //return $this->isInt();
                 return $this->multipleVerify('int', $this->numberVerify, true);
             case 'numeric':
-                //return $this->isNumeric();
                 return $this->multipleVerify('numeric', $this->numberVerify, false);
             case 'string':
-                //return $this->isString();
                 return $this->multipleVerify('string', $this->stringVerify);
             case 'array':
                 return $this->isArray();
             case 'list':
                 return $this->isList();
             case 'date':
-                //return $this->isDate();
                 return $this->multipleVerify('date', $this->dateVerify);
             case 'file':
-               //return $this->isFile();
                return $this->multipleVerify('file', $this->fileVerify);
             case 'email':
-                //return $this->isRegular($this->emailDefaultRegex);
                 return $this->multipleVerify('email', $this->regexVerify, $this->emailDefaultRegex);
             case 'json':
-                //return $this->isJson();
                 return $this->multipleVerify('json', $this->jsonVerify);
             case 'url':
-                //return $this->isRegular($this->urlDefaultRegex);
                 return $this->multipleVerify('email', $this->regexVerify, $this->urlDefaultRegex);
             case 'ip':
-                //return $this->isRegular($this->ipDefaultRegex);
                 return $this->multipleVerify('email', $this->regexVerify, $this->ipDefaultRegex);
             default:
                 return true;
@@ -131,6 +148,10 @@ abstract class VerifyHelper extends RequestHelper
      */
     protected function getFalseMessage(): string
     {
+        if ($this->paramValue === null) {
+            return $this->verifyAlias . '不能为空';
+        }
+
         $message = '';
         switch ($this->verifyType) {
             case 'bool':
@@ -172,10 +193,6 @@ abstract class VerifyHelper extends RequestHelper
                 return '不能小于' . $this->verifyRule['min'];
             case 'max':
                 return '不能大于' . $this->verifyRule['max'];
-            case 'int':
-                return '必须是整数';
-            case 'numeric':
-                return '必须是数字';
         }
         return $this->getGeneralMessage();
     }
@@ -192,8 +209,6 @@ abstract class VerifyHelper extends RequestHelper
                 return '长度不能小于' . $this->verifyRule['min'];
             case 'max':
                 return '长度不能大于' . $this->verifyRule['max'];
-            case 'string':
-                return '必须是字符串';
         }
         return $this->getGeneralMessage();
     }
@@ -253,26 +268,16 @@ abstract class VerifyHelper extends RequestHelper
      */
     private function getGeneralMessage(): string
     {
-        switch ($this->verifyFactor) {
-            case 'regex':
-                return '格式错误';
-            case 'length':
-                if (in_array($this->verifyType, ['array', 'list'])) {
-                    return '元素数量必须是' . $this->verifyRule['length'];
-                } else {
-                    return '长度必须是' . $this->verifyRule['length'];
-                }
+        if ($this->verifyFactor == 'length') {
+            if (in_array($this->verifyType, ['array', 'list'])) {
+                return '元素数量必须是' . $this->verifyRule['length'];
+            } else {
+                return '长度必须是' . $this->verifyRule['length'];
+            }
         }
-        switch ($this->verifyPermit) {
-            case 'must':
-                if (is_null($this->paramValue)) {
-                    return '不能为空';
-                }
-                return '格式错误';
-            case 'empty':
-            case 'nullable':
-                return '格式错误';
+        if ($this->verifyFactor == 'in') {
+            return '无效';
         }
-        return '无效';
+        return '格式错误';
     }
 }

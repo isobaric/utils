@@ -109,16 +109,14 @@ abstract class RequestHelper
      * @param string $call
      * @param null $args
      *
-     * @return bool|mixed
+     * @return bool
      */
-    protected function multipleVerify(string $type, string $call, $args = null)
+    protected function multipleVerify(string $type, string $call, $args = null): bool
     {
         switch ($this->verifyPermit) {
             case 'must':
                 return call_user_func([$this, $call], $args);
             case 'empty':
-                // todo
-                //$this->numberComplexVerify(false);
                 return $this->isEmptyString() || call_user_func([$this, $call], $args);
             case 'nullable':
                 return is_null($this->paramValue) || call_user_func([$this, $call], $args);
@@ -137,7 +135,6 @@ abstract class RequestHelper
      */
     protected function isArray(): bool
     {
-        $this->verifyFactor = 'array';
         switch ($this->verifyPermit) {
             case 'must':
                 return $this->arrayComplexVerify();
@@ -162,7 +159,6 @@ abstract class RequestHelper
      */
     protected function isList(): bool
     {
-        $this->verifyFactor = 'list';
         switch ($this->verifyPermit) {
             case 'must':
                 return $this->listComplexVerify();
@@ -188,11 +184,9 @@ abstract class RequestHelper
      */
     private function numberComplexVerify(bool $isInt): bool
     {
-        $this->verifyFactor = 'int';
         if ($isInt && !$this->isIntNumber($this->paramValue)) {
             return false;
         }
-        $this->verifyFactor = 'numeric';
         if (!$isInt && !is_numeric($this->paramValue)) {
             return false;
         }
