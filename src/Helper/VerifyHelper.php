@@ -115,27 +115,27 @@ abstract class VerifyHelper extends RequestHelper
             case 'bool':
                 return $this->isBool();
             case 'int':
-                return $this->multipleVerify('int', $this->numberVerify, true);
+                return $this->multipleVerify($this->numberVerify, true);
             case 'numeric':
-                return $this->multipleVerify('numeric', $this->numberVerify, false);
+                return $this->multipleVerify($this->numberVerify, false);
             case 'string':
-                return $this->multipleVerify('string', $this->stringVerify);
+                return $this->multipleVerify($this->stringVerify);
             case 'array':
                 return $this->isArray();
             case 'list':
                 return $this->isList();
             case 'date':
-                return $this->multipleVerify('date', $this->dateVerify);
+                return $this->multipleVerify($this->dateVerify);
             case 'file':
-               return $this->multipleVerify('file', $this->fileVerify);
+               return $this->multipleVerify($this->fileVerify);
             case 'email':
-                return $this->multipleVerify('email', $this->regexVerify, $this->emailDefaultRegex);
+                return $this->multipleVerify($this->regexVerify, $this->emailDefaultRegex);
             case 'json':
-                return $this->multipleVerify('json', $this->jsonVerify);
+                return $this->multipleVerify($this->jsonVerify);
             case 'url':
-                return $this->multipleVerify('email', $this->regexVerify, $this->urlDefaultRegex);
+                return $this->multipleVerify($this->regexVerify, $this->urlDefaultRegex);
             case 'ip':
-                return $this->multipleVerify('email', $this->regexVerify, $this->ipDefaultRegex);
+                return $this->multipleVerify($this->regexVerify, $this->ipDefaultRegex);
             default:
                 return true;
         }

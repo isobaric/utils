@@ -105,13 +105,12 @@ abstract class RequestHelper
     /**
      * 通用校验
      *
-     * @param string $type
      * @param string $call
      * @param null $args
      *
      * @return bool
      */
-    protected function multipleVerify(string $type, string $call, $args = null): bool
+    protected function multipleVerify(string $call, $args = null): bool
     {
         switch ($this->verifyPermit) {
             case 'must':

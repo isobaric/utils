@@ -104,6 +104,9 @@ class RequestUtil extends VerifyHelper
     }
 
     /**
+     * 获取verify()或check()方法校验之后的错误提示
+     *  仅当verify()或check()返回值===false时有效
+     *
      * @return string
      */
     final public function getMessage(): string
@@ -114,8 +117,8 @@ class RequestUtil extends VerifyHelper
     /**
      * 参数校验
      *
-     * @param array $params
-     * @param array $rules
+     * @param array $params 全部参数|一维数组
+     * @param array $rules 校验规则|以参数名称为key的数组
      *
      * @return bool
      */
@@ -137,11 +140,11 @@ class RequestUtil extends VerifyHelper
     }
 
     /**
-     * 校验单个参数
+     * 单个校验参数
      *
-     * @param array $params
-     * @param array $rule
-     * @param string $field
+     * @param array $params 全部参数|一维数组
+     * @param array $rule 用于校验当前参数的规则|一维数组
+     * @param string $field 将要校验的参数字段名
      *
      * @return bool
      */
