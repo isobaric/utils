@@ -8,7 +8,6 @@ class CurlUtil
     private $timeout;
     private $method = '';
     private $header = [];
-    private $option = [];
     private $customize = [];
     private $isMillisecond = false;
 
@@ -27,10 +26,22 @@ class CurlUtil
     }
 
     /**
+     * 关闭句柄
+     */
+    public function __destruct()
+    {
+        curl_close($this->handle);
+    }
+
+    /**
      * set http header
      *
      * @param array $header
-     *
+     *  $header =  [
+     *   'Content-Type: application/json',
+     *   'Host: www.baidu.com',
+     *   'Referer: https://www.baidu.com',
+     *  ]
      * @return $this
      */
     public function setHeader(array $header): CurlUtil
@@ -127,87 +138,20 @@ class CurlUtil
 
     /**
      * 设置基础option
-     *
-     * @return void
+     * @return array
      */
-    private function setBaseOption()
+    private function getBaseOption(): array
     {
-        // 设置URL
-        $this->option[CURLOPT_URL] = $this->url;
-        // 允许重定向
-        $this->option[CURLOPT_FOLLOWLOCATION] = true;
-        // 允许重定向的最大次数
-        $this->option[CURLOPT_MAXREDIRS] = 3;
-        // 将curl_exec()获取的信息以字符串返回，而不是直接输出
-        $this->option[CURLOPT_RETURNTRANSFER] = true;
-    }
-
-    /**
-     * HTTPS证书验证
-     *
-     * @return void
-     */
-    private function setHttpsOption()
-    {
-        if (preg_match("/^https/", $this->url)) {
-            // SSL不验证证书
-            $this->option[CURLOPT_SSL_VERIFYPEER] = false;
-            // SSL不验证HOST
-            $this->option[CURLOPT_SSL_VERIFYHOST] = false;
-        }
-    }
-
-    /**
-     * 设置CURL的header头
-     *
-     * @return void
-     */
-    private function setHeaderOption()
-    {
-        if (count($this->header) > 0) {
-            $this->option[CURLOPT_HTTPHEADER] = $this->header;
-        }
-    }
-
-    /**
-     * 设置为POST发送
-     *
-     * @return void
-     */
-    private function setPostOption($data)
-    {
-        if ($this->method != 'GET') {
-            $this->option[CURLOPT_POST] = true;
-            $this->postDataBuild($data);
-        }
-    }
-
-    /**
-     * 设置自定义option
-     *
-     * @return void
-     */
-    private function setCustomizeOption()
-    {
-        foreach ($this->customize as $key => $value) {
-            $this->option[$key] = $value;
-        }
-    }
-
-    /**
-     * 超时设置
-     *
-     * @return void
-     */
-    private function setTimeoutOption()
-    {
-        if ($this->isMillisecond) {
-            // 设置超时时间，以毫秒为单位
-            $this->option[CURLOPT_TIMEOUT_MS] = $this->timeout;
-        } else {
-            // 设置超时时间，以秒为单位
-            $this->option[CURLOPT_TIMEOUT] = $this->timeout;
-        }
+        return [
+            // 设置URL
+            CURLOPT_URL => $this->url,
+            //  // 允许重定向的最大次数
+            CURLOPT_MAXREDIRS => 3,
+            // 允许重定向
+            CURLOPT_FOLLOWLOCATION => true,
+            // 将curl_exec()获取的信息以字符串返回，而不是直接输出
+            CURLOPT_RETURNTRANSFER => true,
+        ];
     }
 
     /**
@@ -219,29 +163,53 @@ class CurlUtil
      */
     private function response($data = null)
     {
-        //设置基础option
-        $this->setBaseOption();
+        // 重置所有的预先设置的选项
+        curl_reset($this->handle);
+
+        // 设置基础option
+        $options = $this->getBaseOption();
+
         // HTTPS证书验证
-        $this->setHttpsOption();
+        if (preg_match("/^https/", $this->url)) {
+            // 默认 SSL不验证证书
+            $options[CURLOPT_SSL_VERIFYPEER] = false;
+            // 默认 SSL不验证HOST
+            $options[CURLOPT_SSL_VERIFYHOST] = false;
+        }
+
         // 设置CURL的header头
-        $this->setHeaderOption();
-        // 设置为POST发送
-        $this->setPostOption($data);
-        // 超时设置
-        $this->setTimeoutOption();
-        // 设置自定义option
-        $this->setCustomizeOption();
+        if (!empty($this->header)) {
+            $options[CURLOPT_HTTPHEADER] = $this->header;
+        }
+
+        // 设置超时时间
+        if ($this->isMillisecond) {
+            // 以毫秒为单位
+            $options[CURLOPT_TIMEOUT_MS] = $this->timeout;
+        } else {
+            // 以秒为单位
+            $options[CURLOPT_TIMEOUT] = $this->timeout;
+        }
+
+        // get / post 参数设置
+        if ($this->method != 'GET') {
+            $options[CURLOPT_POST] = true;
+            $this->postDataBuild($data);
+        }
+
         // 设置CURL参数
-        curl_setopt_array($this->handle, $this->option);
+        curl_setopt_array($this->handle, $options);
+
+        // 自定义配置项
+        if ($this->customize) {
+            curl_setopt_array($this->handle, $this->customize);
+        }
 
         // 响应值
         $response = curl_exec($this->handle);
 
         // 响应码
         $this->code = curl_getinfo($this->handle, CURLINFO_HTTP_CODE);
-
-        // 关闭句柄
-        curl_close($this->handle);
 
         return $response;
     }

@@ -2,7 +2,7 @@
 
 namespace Horseloft\Utils;
 
-class ElasticSearchUtil
+class ElasticsearchUtil
 {
 
 }
