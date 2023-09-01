@@ -17,6 +17,9 @@ class CurlUtil
      */
     private $handle;
 
+    /**
+     * @param int $timeout
+     */
     public function __construct(int $timeout = 30)
     {
         $this->timeout = $timeout;
@@ -135,6 +138,8 @@ class CurlUtil
         $this->option[CURLOPT_FOLLOWLOCATION] = true;
         // 允许重定向的最大次数
         $this->option[CURLOPT_MAXREDIRS] = 3;
+        // 将curl_exec()获取的信息以字符串返回，而不是直接输出
+        $this->option[CURLOPT_RETURNTRANSFER] = true;
     }
 
     /**
