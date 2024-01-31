@@ -1,15 +1,15 @@
 <?php
-namespace Horseloft\Utils;
+namespace Isobaric\Utils;
 
 class CurlUtil
 {
-    private $url = '';
-    private $code = -1;
-    private $timeout;
-    private $method = '';
-    private $header = [];
-    private $customize = [];
-    private $isMillisecond = false;
+    private string $url = '';
+    private int $code = -1;
+    private int $timeout;
+    private string $method = '';
+    private array $header = [];
+    private array $customize = [];
+    private bool $isMillisecond = false;
 
     /**
      * @var false|resource
@@ -85,7 +85,7 @@ class CurlUtil
      *
      * @return bool|string
      */
-    public function get(string $url)
+    public function get(string $url): bool|string
     {
         $this->url = $url;
         $this->method = 'GET';
@@ -100,7 +100,7 @@ class CurlUtil
      *
      * @return bool|string
      */
-    public function post(string $url, $data)
+    public function post(string $url, $data): bool|string
     {
         $this->url = $url;
         $this->method = 'POST';
@@ -124,7 +124,7 @@ class CurlUtil
      *
      * @return void
      */
-    private function postDataBuild($data)
+    private function postDataBuild($data): void
     {
         if (empty($data)) {
             return;
@@ -161,7 +161,7 @@ class CurlUtil
      *
      * @return bool|string
      */
-    private function response($data = null)
+    private function response($data = null): bool|string
     {
         // 重置所有的预先设置的选项
         curl_reset($this->handle);
@@ -170,7 +170,7 @@ class CurlUtil
         $options = $this->getBaseOption();
 
         // HTTPS证书验证
-        if (preg_match("/^https/", $this->url)) {
+        if (str_starts_with($this->url, "https")) {
             // 默认 SSL不验证证书
             $options[CURLOPT_SSL_VERIFYPEER] = false;
             // 默认 SSL不验证HOST
