@@ -1,6 +1,6 @@
 <?php
 
-namespace Horseloft\Utils\Helper;
+namespace Isobaric\Utils\Helper;
 
 use DateTime;
 use Throwable;

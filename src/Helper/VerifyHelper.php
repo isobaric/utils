@@ -1,6 +1,6 @@
 <?php
 
-namespace Horseloft\Utils\Helper;
+namespace Isobaric\Utils\Helper;
 
 abstract class VerifyHelper extends RequestHelper
 {
