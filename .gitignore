@@ -1,13 +1,8 @@
-/.idea
+.idea
+.vscode
 
-### STS ###
-.apt_generated
-.classpath
-.factorypath
-.project
-.settings
-.springBeans
-.sts4-cache
+tests
+vendor
 
-### VS Code ###
-.vscode/
+composer.lock
+.phpunit.result.cache
