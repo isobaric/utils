@@ -1,8 +1,8 @@
 <?php
 
-namespace Horseloft\Utils;
+namespace Isobaric\Utils;
 
-use Horseloft\Utils\Helper\VerifyHelper;
+use Isobaric\Utils\Helper\VerifyHelper;
 
 class RequestUtil extends VerifyHelper
 {
