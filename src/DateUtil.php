@@ -20,14 +20,23 @@ class DateUtil
     const FORMAT_DATETIME = 'Y-m-d H:i:s';
 
     /**
-     * 获取DateTime对象
-     *  $date格式必须与$format一致
+     * 获取$date的DateTime对象
      *
      * @param string|null $date
+     *  日期或日期表达式；$date为空返回false
+     *
      * @param string|null $format
+     *  $date的日期格式；如果$format不是null则会对比$date是否与格式化之后的日期相等，如果不相等则返回false
+     *
      * @return \DateTime|false
+     *  成功：返回\DateTime对象
+     *  失败：返回false
+     *
+     * @example
+     *  DateUtil::getDateTime('2026-02-01');
+     *  DateUtil::getDateTime('2026-02-01 12:12', 'Y-m-d H:i');
      */
-    public static function getDateTime(?string $date, ?string $format = 'Y-m-d'): \DateTime|bool
+    public static function getDateTime(?string $date, ?string $format = 'Y-m-d'): \DateTime|false
     {
         if ($date == '') {
             return false;
@@ -58,279 +67,22 @@ class DateUtil
     }
 
     /**
-     * 获取毫秒
-     *
-     * @return int
-     */
-    public static function millisecond(): int
-    {
-        return microtime(true) * 1000;
-    }
-
-    /**
-     * 今天的开始时间
-     *
-     * @param string $format
-     * @return string
-     */
-    public static function getTodayStart(string $format = 'Y-m-d H:i:s'): string
-    {
-        return date($format, self::getTodayStartTime());
-    }
-
-    /**
-     * 今天的结束时间
-     *
-     * @param string $format
-     * @return string
-     */
-    public static function getTodayEnd(string $format = 'Y-m-d H:i:s'): string
-    {
-        return date($format, self::getTodayEndTime());
-    }
-
-    /**
-     * 周的开始时间
-     *  返回$data所属周的开始时间，如果$data等于null则返当前周的开始时间
+     * 获取格式化后的日期
      *
      * @param string|null $date
-     *  日期或日期表达式
-     * @param string $format
-     *  返回值的格式
-     * @return string
-     */
-    public static function getWeekStart(?string $date = null, string $format = 'Y-m-d H:i:s'): string
-    {
-        return date($format, self::getWeekStartTime($date));
-    }
-
-    /**
-     * 周的结束时间
-     *  返回$data所属周的结束时间，如果$data等于null则返当前周的结束时间
-     *
-     * @param string|null $date
-     *  日期或日期表达式
-     * @param string $format
-     *  返回值的格式
-     * @return string
-     */
-    public static function getWeekEnd(?string $date = null, string $format = 'Y-m-d H:i:s'): string
-    {
-        return date($format, self::getWeekEndTime($date));
-    }
-
-    /**
-     * 月的开始时间
-     *  返回$data所属月的开始时间，如果$data等于null则返当前月的开始时间
-     *
-     * @param string|null $date
-     *  日期或日期表达式
-     * @param string $format
-     *  返回值的格式
-     * @return string
-     */
-    public static function getMonthStart(?string $date = null, string $format = 'Y-m-d H:i:s'): string
-    {
-        return date($format, self::getMonthStartTime($date));
-    }
-
-    /**
-     * 月的结束时间
-     *  返回$data所属月的结束时间，如果$data等于null则返当前月的结束时间
-     *
-     * @param string|null $date
-     *  日期或日期表达式
-     * @param string $format
-     *  返回值的格式
-     * @return string
-     */
-    public static function getMonthEnd(?string $date = null, string $format = 'Y-m-d H:i:s'): string
-    {
-        return date($format, self::getMonthEndTime($date));
-    }
-
-    /**
-     * 今年的开始时间
+     *  日期或日期表达式；$date为空返回空字符串
      *
      * @param string $format
+     *  返回值格式
+     *
      * @return string
-     */
-    public static function getYearStart(string $format = 'Y-m-d H:i:s'): string
-    {
-        return date($format, self::getYearStartTime());
-    }
-
-    /**
-     * 今年的结束时间
+     *  成功：返回$format格式的日期
+     *  失败：返回空字符串
      *
-     * @param string $format
-     * @return string
-     */
-    public static function getYearEnd(string $format = 'Y-m-d H:i:s'): string
-    {
-        return date($format, self::getYearEndTime());
-    }
-
-    /**
-     * 今天开始的时间戳
-     *
-     * @return int
-     */
-    public static function getTodayStartTime(): int
-    {
-        return strtotime(date('Y-m-d') . ' 00:00:00');
-    }
-
-    /**
-     * 今天结束的时间戳
-     *
-     * @return int
-     */
-    public static function getTodayEndTime(): int
-    {
-        return strtotime(date('Y-m-d') . ' 23:59:59');
-    }
-
-    /**
-     * 获取格式化的日期 TODO
-     *
-     * @param string $format
-     *  返回值的日期格式
-     * @param string|null $date
-     *  日期或日期表达式，如果是null则使用当前日期
-     * @param string|null $dateFormat
-     *  $date的日期格式，如果不是null则会比较$data是否与格式化之后的$data相等，如果不相等则返回空字符串
-     * @return string
-     */
-    public static function formatDate(string $format, ?string $date = null, ?string $dateFormat = null): string
-    {
-        if ($format == '') {
-            return '';
-        }
-
-        if (is_null($date)) {
-            return date($format);
-        }
-
-        $dateTime = self::getDateTime($date, $dateFormat);
-        if (!$dateTime) {
-            return '';
-        }
-        return $dateTime->format($format);
-    }
-
-    /**
-     * 周开始的时间戳
-     *  返回$data所属周的开始时间戳，如果$data等于null则返当前周的开始时间戳
-     *
-     * @param string|null $date
-     *  日期或日期表达式
-     * @param string|null $format
-     *   $date的日期格式；如果不是null则会比较$data是否与格式化之后的$data相等，如果不相等则返回false
-     * @return false|int
-     */
-    public static function getWeekStartTime(?string $date = null, ?string $format = null): false|int
-    {
-        $day = self::formatDate('Y-m-d 00:00:00', $date, $format);
-        if ($day == '') {
-            return false;
-        }
-
-        $timestamp = strtotime($day);
-        $week = intval(date('N', $timestamp));
-        $revise = ($week - 1) * 86400;
-
-        return $timestamp - $revise;
-    }
-
-    /**
-     * 周结束的时间戳
-     *  返回$data所属周的结束时间戳，如果$data等于null则返当前周的结束时间戳
-     *
-     * @param string|null $date
-     *  日期或日期表达式
-     * @param string|null $format
-     *  $date的日期格式；如果不是null则会比较$data是否与格式化之后的$data相等，如果不相等则返回false
-     * @return false|int
-     */
-    public static function getWeekEndTime(?string $date = null, ?string $format = null): false|int
-    {
-        $day = self::formatDate('Y-m-d 23:59:59', $date, $format);
-        if ($day == '') {
-            return false;
-        }
-
-        $timestamp = strtotime($day);
-        $week = intval(date('N', $timestamp));
-        $revise = (7 - $week) * 86400;
-
-        return $timestamp + $revise;
-    }
-
-    /**
-     * 本月开始的时间戳
-     *
-     * @param string|null $date
-     * @param string|null $format
-     * @return false|int
-     */
-    public static function getMonthStartTime(?string $date = null, ?string $format = null): false|int
-    {
-        $day = self::formatDate('Y-m-01 00:00:00', $date, $format);
-        if ($day == '') {
-            return false;
-        }
-
-        return strtotime($day);
-    }
-
-    /**
-     * 本月结束的时间戳 todo
-     *
-     * @param string|null $date
-     * @param string|null $format
-     * @return false|int
-     */
-    public static function getMonthEndTime(?string $date = null, ?string $format = null): false|int
-    {
-        $day = self::formatDate('Y-m-t 23:59:59', $date, $format);
-        if ($day == '') {
-            return false;
-        }
-        return strtotime($day);
-    }
-
-    /**
-     * 本年开始的时间戳
-     *
-     * @return int
-     */
-    public static function getYearStartTime(): int
-    {
-        return strtotime(date('Y-01-01 00:00:00'));
-    }
-
-    /**
-     * 本年结束的时间戳
-     *
-     * @return int
-     */
-    public static function getYearEndTime(): int
-    {
-        $lastMonthDay = date('t', strtotime('Y-12-01'));
-        return strtotime(date('Y-12-' . $lastMonthDay . ' 23:59:59'));
-    }
-    
-    /**
-     * 日期格式转换
-     *  $date格式必须与$format一致
-     *  例：
-     *  Y-m-d H:i:s 转 Y-m-d
-     *  Y-m-d H:i:s 转 H:i:s
-     *
-     * @param string|null $date
-     * @param string $format
-     * @return string
+     * @example
+     *  DateUtil::format('+1 day');
+     *  DateUtil::format('2024-03-01 12:30');
+     *  DateUtil::format('2024-03-01 12:30:10', 'H:i:s');
      */
     public static function format(?string $date, string $format = 'Y-m-d'): string
     {
@@ -354,17 +106,482 @@ class DateUtil
     }
 
     /**
-     * 日期格式转换
-     *  $datetime格式必须是Y-m-d H:i:s
-     *  例：
-     *  Y/m/d H:i:s 转 Y-m-d H:i:s
+     * 获取格式化的日期
      *
-     * @param string|null $datetime
+     * @param string $format
+     *  返回值的日期格式
+     *
+     * @param string|null $date
+     *  日期或日期表达式
+     *
+     * @param string|null $dateFormat
+     *  $date的日期格式
+     *
      * @return string
+     *  成功：返回格式化的日期字符串
+     *      如果$date是null，$dateFormat不是null则返回空字符串；
+     *      如果$date是null，$dateFormat也是null则返回format后的当前日期；
+     *      如果$date不是null，$dateFormat是null则不验证$date的日期格式，返回format后的日期；
+     *      如果$date不是null，$dateFormat不是null则会比较$date是否与格式化之后的日期相等，如果相等返回format后的日期；
+     *  失败：返回空字符串
+     *
+     * @example
+     *  DateUtil::formatDate('Y-m-d');
+     *  DateUtil::formatDate('Y-m-d', '+ 1 day');
+     *  DateUtil::formatDate('Y-m-d', '2023-02-01 00:12:00', 'Y-m-d H:i:s');
      */
-    public static function datetimeFormat(?string $datetime): string
+    public static function formatDate(string $format, ?string $date = null, ?string $dateFormat = null): string
     {
-        return self::format($datetime, 'Y-m-d H:i:s');
+        if ($format == '') {
+            return '';
+        }
+
+        if (is_null($date)) {
+            return !is_null($dateFormat) ? '' : date($format);
+        }
+
+        $dateTime = self::getDateTime($date, $dateFormat);
+        if (!$dateTime) {
+            return '';
+        }
+        return $dateTime->format($format);
+    }
+
+    /**
+     * 获取Y-m-d H:i:s格式的日期
+     *
+     * @param string|null $date
+     *  日期或日期表达式
+     *
+     * @return string
+     *  成功：返回Y-m-d H:i:s格式的日期
+     *  失败：返回空字符串
+     *
+     * @example
+     *  DateUtil::formatDatetime('2023/12/12 12:12:12');
+     *  DateUtil::formatDatetime('-1 day');
+     */
+    public static function formatDatetime(?string $date): string
+    {
+        return self::format($date, self::FORMAT_DATETIME);
+    }
+
+    /**
+     * 获取毫秒
+     *
+     * @return int
+     */
+    public static function millisecond(): int
+    {
+        return microtime(true) * 1000;
+    }
+
+    /**
+     * 获取当前日期或指定日期的开始时间戳
+     *
+     * @param string|null $date
+     *  日期或日期表达式，如果是null则默认日期为今天
+     *
+     * @param string|null $format
+     *   $date的日期格式；如果$format不是null则会比较$date是否与格式化之后的日期相等，如果不相等则返回false
+     *
+     * @return false|int
+     *  成功：返回日期的开始时间戳
+     *  失败：返回false
+     *
+     * @example
+     *  DateUtil::dateStartTime();
+     *  DateUtil::dateStartTime('+7 day');
+     *  DateUtil::dateStartTime('2022-12-12');
+     *  DateUtil::dateStartTime('2022-12-12', 'Y-m-d');
+     *  DateUtil::dateStartTime('2030-12-31 12:12:12');
+     *  DateUtil::dateStartTime('2030-12-31 12:12:12', 'Y-m-d H:i:s');
+     */
+    public static function dateStartTime(?string $date = null, ?string $format = null): false|int
+    {
+        $day = self::formatDate('Y-m-d', $date, $format);
+        if ($day == '') {
+            return false;
+        }
+
+        return strtotime($day);
+    }
+
+    /**
+     * 获取当前日期或指定日期的开始时间
+     *
+     * @param string|null $date
+     *  日期或日期表达式，如果是null则默认日期为今天
+     *
+     * @param string $format
+     *  返回值的格式
+     *
+     * @return string
+     *  成功：返回格式化后的日期开始时间
+     *  失败：返回空字符串
+     *
+     * @example
+     *  DateUtil::dateStart();
+     *  DateUtil::dateStart('2030-11-11');
+     *  DateUtil::dateStart(null, 'Y-m-d H:i');
+     *  DateUtil::dateStart('+1 day', 'Y-m-d H:i');
+     */
+    public static function dateStart(?string $date = null, string $format = 'Y-m-d H:i:s'): string
+    {
+        $time = self::dateStartTime($date);
+        return $time ? date($format, $time) : '';
+    }
+
+    /**
+     * 获取当前日期或指定日期的结束时间戳
+     *
+     * @param string|null $date
+     *  日期或日期表达式，如果是null则默认日期为今天
+     *
+     * @param string|null $format
+     *   $date的日期格式；如果$format不是null则会比较$date是否与格式化之后的日期相等，如果不相等则返回false
+     *
+     * @return false|int
+     *  成功：返回日期的结束时间戳
+     *  失败：返回false
+     *
+     * @example
+     *  DateUtil::dateEndTime();
+     *  DateUtil::dateEndTime('+7 day');
+     *  DateUtil::dateEndTime('2022-12-12');
+     *  DateUtil::dateEndTime('2022-12-12', 'Y-m-d');
+     */
+    public static function dateEndTime(?string $date = null, ?string $format = null): false|int
+    {
+        $day = self::formatDate('Y-m-d 23:59:59', $date, $format);
+        if ($day == '') {
+            return false;
+        }
+
+        return strtotime($day);
+    }
+
+    /**
+     * 获取当前日期或指定日期的结束时间
+     *
+     * @param string|null $date
+     *  日期或日期表达式，如果是null则默认日期为今天
+     *
+     * @param string $format
+     *  返回值的格式
+     * @return string
+     *  成功：返回格式化后的日期的结束时间
+     *  失败：返回空字符串
+     *
+     * @example
+     *  DateUtil::dateEnd();
+     *  DateUtil::dateEnd('+1 day');
+     *  DateUtil::dateEnd('2030-11-11');
+     *  DateUtil::dateEnd('2030-11-11', 'H:i Y/m/d');
+     */
+    public static function dateEnd(?string $date = null, string $format = 'Y-m-d H:i:s'): string
+    {
+        $time = self::dateEndTime($date);
+        return $time ? date($format, $time) : '';
+    }
+
+    /**
+     * 获取本周或指定日期所在周的开始时间戳
+     *
+     * @param string|null $date
+     *  日期或日期表达式，如果是null则默认日期为今天
+     *
+     * @param string|null $format
+     *   $date的日期格式；如果$format不是null，则会比较$date是否与格式化之后的日期相等，如果不相等则返回false
+     *
+     * @return false|int
+     *  成功：返回周的开始时间戳
+     *  失败：返回false
+     *
+     * @example
+     *  DateUtil::weekStartTime();
+     *  DateUtil::weekStartTime('+3 day');
+     *  DateUtil::weekStartTime('2030-05-10');
+     *  DateUtil::weekStartTime('2030-05-10', 'Y-m-d');
+     */
+    public static function weekStartTime(?string $date = null, ?string $format = null): false|int
+    {
+        $day = self::formatDate('Y-m-d', $date, $format);
+        if ($day == '') {
+            return false;
+        }
+
+        $timestamp = strtotime($day);
+        $week = intval(date('N', $timestamp));
+        $revise = ($week - 1) * 86400;
+
+        return $timestamp - $revise;
+    }
+
+    /**
+     * 获取本周或指定日期所在周的开始时间
+     *
+     * @param string|null $date
+     *  日期或日期表达式，如果是null则默认日期为今天
+     *
+     * @param string $format
+     *  返回值的格式
+     *
+     * @return string
+     *  成功：返回格式化后周的开始时间
+     *  失败：返回空字符串
+     *
+     * @example
+     *  DateUtil::weekStartTime();
+     *  DateUtil::weekStartTime('+3 day');
+     *  DateUtil::weekStartTime('2030-05-10');
+     *  DateUtil::weekStart(null, 'Y-m-d H:i');
+     *  DateUtil::weekStartTime('2030-05-10', 'Y-m-d');
+     */
+    public static function weekStart(?string $date = null, string $format = 'Y-m-d H:i:s'): string
+    {
+        $time = self::weekStartTime($date);
+        return $time ? date($format, $time) : '';
+    }
+
+    /**
+     * 获取本周或指定日期所在周的结束时间戳
+     *
+     * @param string|null $date
+     *  日期或日期表达式，如果是null则默认日期为今天
+     *
+     * @param string|null $format
+     *  $date的日期格式；如果$format不是null则会比较$date是否与格式化之后的日期相等，如果不相等则返回false
+     *
+     * @return false|int
+     *  成功：返回周的结束时间戳
+     *  失败：返回false
+     *
+     * @example
+     *  DateUtil::weekEndTime();
+     *  DateUtil::weekEndTime('+3 day');
+     *  DateUtil::weekEndTime('2030-05-10');
+     *  DateUtil::weekEndTime('2030-05-10', 'Y-m-d');
+     */
+    public static function weekEndTime(?string $date = null, ?string $format = null): false|int
+    {
+        $day = self::formatDate('Y-m-d 23:59:59', $date, $format);
+        if ($day == '') {
+            return false;
+        }
+
+        $timestamp = strtotime($day);
+        $week = intval(date('N', $timestamp));
+        $revise = (7 - $week) * 86400;
+
+        return $timestamp + $revise;
+    }
+
+    /**
+     * 获取本周或指定日期所在周的结束时间
+     *
+     * @param string|null $date
+     *  日期或日期表达式，如果是null则默认日期为今天
+     *
+     * @param string $format
+     *  返回值的格式
+     *
+     * @return string
+     *  成功：返回格式化后周的结束时间
+     *  失败：返回空字符串
+     *
+     * @example
+     *  DateUtil::weekEnd();
+     *  DateUtil::weekEnd('+7 day');
+     *  DateUtil::weekEnd('2024-05-22');
+     *  DateUtil::weekEnd(null, 'Y-m-d H:i');
+     *  DateUtil::weekEnd('2024-05-22 12:12', 'Y-m-d H:i');
+     */
+    public static function weekEnd(?string $date = null, string $format = 'Y-m-d H:i:s'): string
+    {
+        $time = self::weekEndTime($date);
+        return $time ? date($format, $time) : '';
+    }
+
+    /**
+     * 获取本月或指定日期所在月的开始时间戳
+     *
+     * @param string|null $date
+     *  日期或日期表达式，如果是null则默认日期为今天
+     *
+     * @param string|null $format
+     *  $date的日期格式；如果$format不是null则会比较$date是否与格式化之后的日期相等，如果不相等则返回false
+     *
+     * @return false|int
+     *  成功：返回月的开始时间戳
+     *  失败：返回false
+     *
+     * @example
+     *  DateUtil::monthStartTime();
+     *  DateUtil::monthStartTime('+3 day');
+     *  DateUtil::monthStartTime('2030-05-10');
+     *  DateUtil::monthStartTime('2030-05-10', 'Y-m-d');
+     */
+    public static function monthStartTime(?string $date = null, ?string $format = null): false|int
+    {
+        $day = self::formatDate('Y-m-01', $date, $format);
+        if ($day == '') {
+            return false;
+        }
+
+        return strtotime($day);
+    }
+
+    /**
+     * 获取本月或指定日期所在月份的开始时间
+     *
+     * @param string|null $date
+     *  日期或日期表达式，如果是null则默认日期为今天
+     *
+     * @param string $format
+     *  返回值的格式
+     *
+     * @return string
+     *  成功：返回格式化后月分的开始时间
+     *  失败：返回空字符串
+     *
+     * @example
+     *  DateUtil::monthStart();
+     *  DateUtil::monthStart('+7 day');
+     *  DateUtil::monthStart('2024-05-22');
+     *  DateUtil::monthStart(null, 'Y-m-d H:i');
+     *  DateUtil::monthStart('2024-05-22 12:12', 'Y-m-d H:i');
+     */
+    public static function monthStart(?string $date = null, string $format = 'Y-m-d H:i:s'): string
+    {
+        $time = self::monthStartTime($date);
+        return $time ? date($format, $time) : '';
+    }
+
+    /**
+     * 获取本月或指定日期所在月的结束时间戳
+     *
+     * @param string|null $date
+     *  日期或日期表达式，如果是null则默认日期为今天
+     *
+     * @param string|null $format
+     *  $date的日期格式；如果$format不是null则会比较$date是否与格式化之后的日期相等，如果不相等则返回false
+     *
+     * @return false|int
+     *  成功：返回月的结束时间戳
+     *  失败：返回false
+     *
+     * @example
+     *  DateUtil::monthEndTime();
+     *  DateUtil::monthEndTime('+3 day');
+     *  DateUtil::monthEndTime('2030-05-10');
+     *  DateUtil::monthEndTime('2030-05-10', 'Y-m-d');
+     */
+    public static function monthEndTime(?string $date = null, ?string $format = null): false|int
+    {
+        $day = self::formatDate('Y-m-t 23:59:59', $date, $format);
+        if ($day == '') {
+            return false;
+        }
+        return strtotime($day);
+    }
+
+    /**
+     * 获取本月或指定日期所在月份的结束时间
+     *
+     * @param string|null $date
+     *  日期或日期表达式，如果是null则默认日期为今天
+     *
+     * @param string $format
+     *  返回值的格式
+     *
+     * @return string
+     *  成功：返回格式化后月分的结束时间
+     *  失败：返回空字符串
+     *
+     * @example
+     *  DateUtil::monthEnd();
+     *  DateUtil::monthEnd('+7 day');
+     *  DateUtil::monthEnd('2024-05-22');
+     *  DateUtil::monthEnd(null, 'Y-m-d H:i');
+     *  DateUtil::monthEnd('2024-05-22 12:12', 'Y-m-d H:i');
+     */
+    public static function monthEnd(?string $date = null, string $format = 'Y-m-d H:i:s'): string
+    {
+        $time = self::monthEndTime($date);
+        return $time ? date($format, $time) : '';
+    }
+
+    /** todo
+     * 年开始的时间戳
+     *
+     * @param int|null $year
+     *  表示年的数字；如果等于null则返回当前年的开始时间戳，如果小于1970则返回false
+     * @return false|int
+     */
+    public static function yearStartTime(?int $year = null): false|int
+    {
+        if (is_null($year) ) {
+            return strtotime(date('Y-01-01'));
+        }
+
+        if ($year < 1970) {
+            return false;
+        }
+        return strtotime(date($year .'-01-01'));
+    }
+
+    /**
+     * 今年的开始时间
+     *
+     * @param int|null $year
+     *  表示年的数字；如果等于null则返回当前年的开始时间，如果小于1970则返回空字符串
+     * @param string $format
+     *  返回值的格式
+     * @return string
+     *  成功：返回格式化后的日期；
+     *  失败：返回空字符串
+     */
+    public static function getYearStart(?int $year = null, string $format = 'Y-m-d H:i:s'): string
+    {
+        $time = self::yearStartTime($year);
+        return $time ? date($format, $time) : '';
+    }
+
+    /**
+     * 年结束的时间戳
+     *
+     * @param int|null $year
+     *  表示年的数字；如果等于null则返回当前年的开始时间戳，如果小于1970则返回false
+     * @return false|int
+     */
+    public static function getYearEndTime(?int $year = null): false|int
+    {
+        if (is_null($year) ) {
+            return strtotime(date('Y-12-31 23:59:59'));
+        }
+
+        if ($year < 1970) {
+            return false;
+        }
+        return strtotime(date($year .'-12-31 23:59:59'));
+    }
+
+    /**
+     * 年的结束时间
+     *
+     * @param int|null $year
+     *  表示年的数字；如果等于null则返回当前年的结束时间，如果小于1970则返回空字符串
+     * @param string $format
+     *  返回值的格式
+     * @return string
+     *  成功：返回格式化后的日期；
+     *  失败：返回空字符串
+     */
+    public static function getYearEnd(?int $year = null, string $format = 'Y-m-d H:i:s'): string
+    {
+        $time = self::getYearEndTime($year);
+        return $time ? date($format, $time) : '';
     }
 
     /**
@@ -477,7 +694,7 @@ class DateUtil
             return false;
         }
         $timestamp = $dateTime->getTimestamp();
-        $todayStart = self::getTodayStartTime();
+        $todayStart = self::dateStartTime();
 
         return $timestamp >= $todayStart && $timestamp <= ($todayStart + 86400);
     }
@@ -496,7 +713,7 @@ class DateUtil
             return false;
         }
         $timestamp = $dateTime->getTimestamp();
-        $todayStart = self::getTodayStartTime();
+        $todayStart = self::dateStartTime();
 
         return $timestamp >= ($todayStart - 86400) && $timestamp < $todayStart;
     }
@@ -515,7 +732,7 @@ class DateUtil
             return false;
         }
         $timestamp = $dateTime->getTimestamp();
-        $todayEnd = self::getTodayEndTime();
+        $todayEnd = self::dateEndTime();
 
         return $timestamp > $todayEnd && $timestamp <= ($todayEnd + 86400);
     }
@@ -672,6 +889,4 @@ class DateUtil
 
         return $secondDatetime->getTimestamp() - $firstDatetime->getTimestamp();
     }
-
-    // 编写方法注释 TODO
 }
