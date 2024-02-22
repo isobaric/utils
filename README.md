@@ -1,25 +1,16 @@
 <h4 align="center">Util Library For PHP</h4>
 
 # 注意事项
+1. 当前Util的最低PHP版本为8.1
 
 # 版本说明
 
-## v1.2.0
-1. 最低PHP版本设置为8.1
-2. 使用PHP8语法优化
-3. 新增单元测试 phpunit/phpunit
-4. 新增 ArrayUtil
-5. 新增 NumericUtil
-6. 新增 DateUtl
-7. 新增 ElasticsearchUtil
+## v0.1.0
+1. 增加CURL工具：CurlUtil
+2. 增加接口请求参数校验工具：RequestUtil
+3. 增加数组工具：ArrayUtil
+4. 增加数字及数字字符串工具：NumericUtil
+5. 增加时间及日期工具：DateUtl
+6. 增加Elasticsearch操作工具：ElasticsearchUtil
+7. 增加单元测试模块：phpunit/phpunit
 8. CurlUtil 默认设置 CURLOPT_RETURNTRANSFER = true 将curl_exec()获取的信息以字符串返回，而不是直接输出
-9. 优化 CurlUtil 句柄关闭机制
-
-## v1.1.1
-1. 优化 RequestUtil
-
-## v1.1.0
-1. 新增 RequestUtil 验证类
-
-## v1.0.0
-1. 新增 CurlUtil 工具类

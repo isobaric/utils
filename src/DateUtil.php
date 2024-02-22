@@ -5,21 +5,6 @@ namespace Isobaric\Utils;
 class DateUtil
 {
     /**
-     * Y-m-d
-     */
-    const FORMAT_DATE = 'Y-m-d';
-
-    /**
-     * H:i:s
-     */
-    const FORMAT_TIME = 'H:i:s';
-
-    /**
-     * Y-m-d H:i:s
-     */
-    const FORMAT_DATETIME = 'Y-m-d H:i:s';
-
-    /**
      * 获取$date的DateTime对象
      *
      * @param string|null $date
@@ -163,7 +148,7 @@ class DateUtil
      */
     public static function formatDatetime(?string $date): string
     {
-        return self::format($date, self::FORMAT_DATETIME);
+        return self::format($date, 'Y-m-d H:i:s');
     }
 
     /**
@@ -306,12 +291,12 @@ class DateUtil
      */
     public static function weekStartTime(?string $date = null, ?string $format = null): false|int
     {
-        $day = self::formatDate('Y-m-d', $date, $format);
-        if ($day == '') {
+        $formatDate = self::formatDate('Y-m-d', $date, $format);
+        if ($formatDate == '') {
             return false;
         }
 
-        $timestamp = strtotime($day);
+        $timestamp = strtotime($formatDate);
         $week = intval(date('N', $timestamp));
         $revise = ($week - 1) * 86400;
 
@@ -365,12 +350,12 @@ class DateUtil
      */
     public static function weekEndTime(?string $date = null, ?string $format = null): false|int
     {
-        $day = self::formatDate('Y-m-d 23:59:59', $date, $format);
-        if ($day == '') {
+        $formatDate = self::formatDate('Y-m-d 23:59:59', $date, $format);
+        if ($formatDate == '') {
             return false;
         }
 
-        $timestamp = strtotime($day);
+        $timestamp = strtotime($formatDate);
         $week = intval(date('N', $timestamp));
         $revise = (7 - $week) * 86400;
 
@@ -424,12 +409,12 @@ class DateUtil
      */
     public static function monthStartTime(?string $date = null, ?string $format = null): false|int
     {
-        $day = self::formatDate('Y-m-01', $date, $format);
-        if ($day == '') {
+        $formatDate = self::formatDate('Y-m-01', $date, $format);
+        if ($formatDate == '') {
             return false;
         }
 
-        return strtotime($day);
+        return strtotime($formatDate);
     }
 
     /**
@@ -479,11 +464,11 @@ class DateUtil
      */
     public static function monthEndTime(?string $date = null, ?string $format = null): false|int
     {
-        $day = self::formatDate('Y-m-t 23:59:59', $date, $format);
-        if ($day == '') {
+        $formatDate = self::formatDate('Y-m-t 23:59:59', $date, $format);
+        if ($formatDate == '') {
             return false;
         }
-        return strtotime($day);
+        return strtotime($formatDate);
     }
 
     /**
@@ -512,103 +497,154 @@ class DateUtil
         return $time ? date($format, $time) : '';
     }
 
-    /** todo
-     * 年开始的时间戳
+    /**
+     * 获取本年或指定日期所在年的开始时间戳
      *
-     * @param int|null $year
-     *  表示年的数字；如果等于null则返回当前年的开始时间戳，如果小于1970则返回false
+     * @param string|null $date
+     *  日期或日期表达式，如果是null则默认日期为今年
+     *
+     * @param string|null $format
+     *  $date的日期格式；如果$format不是null则会比较$date是否与格式化之后的日期相等，如果不相等则返回false
+     *
      * @return false|int
+     *  成功：返回年的开始时间戳
+     *  失败：返回false
+     *
+     * @example
+     *  DateUtil::yearStartTime();
+     *  DateUtil::yearStartTime('1970');
+     *  DateUtil::yearStartTime('+1 year');
+     *  DateUtil::yearStartTime('2000-01-01');
+     *  DateUtil::yearStartTime('2000-01-01', 'Y-m-d');
      */
-    public static function yearStartTime(?int $year = null): false|int
+    public static function yearStartTime(?string $date = null, ?string $format = null): false|int
     {
-        if (is_null($year) ) {
-            return strtotime(date('Y-01-01'));
-        }
-
-        if ($year < 1970) {
+        $day = self::formatDate('Y-01-01', $date, $format);
+        if ($day == '') {
             return false;
         }
-        return strtotime(date($year .'-01-01'));
+        return strtotime($day);
     }
 
     /**
-     * 今年的开始时间
+     * 年的开始时间
      *
-     * @param int|null $year
-     *  表示年的数字；如果等于null则返回当前年的开始时间，如果小于1970则返回空字符串
+     * @param string|null $date
+     *  日期或日期表达式，如果是null则默认日期为今年
+     *
      * @param string $format
      *  返回值的格式
+     *
      * @return string
-     *  成功：返回格式化后的日期；
+     *  成功：返回格式化后年的开始时间
      *  失败：返回空字符串
+     *
+     * @example
+     *  DateUtil::yearStart();
+     *  DateUtil::yearStart('+1 year');
+     *  DateUtil::yearStart('2024-05-22');
+     *  DateUtil::yearStart(null, 'Y-m-d H:i');
+     *  DateUtil::yearStart('2024-05-22 12:12', 'Y-m-d H:i');
      */
-    public static function getYearStart(?int $year = null, string $format = 'Y-m-d H:i:s'): string
+    public static function yearStart(?string $date = null, string $format = 'Y-m-d H:i:s'): string
     {
-        $time = self::yearStartTime($year);
+        $time = self::yearStartTime($date);
         return $time ? date($format, $time) : '';
     }
 
     /**
-     * 年结束的时间戳
+     * 获取本年或指定日期所在年的结束时间戳
      *
-     * @param int|null $year
-     *  表示年的数字；如果等于null则返回当前年的开始时间戳，如果小于1970则返回false
+     * @param string|null $date
+     *  日期或日期表达式，如果是null则默认日期为今年
+     *
+     * @param string|null $format
+     *  $date的日期格式；如果$format不是null则会比较$date是否与格式化之后的日期相等，如果不相等则返回false
+     *
      * @return false|int
+     *  成功：返回年的结束时间戳
+     *  失败：返回false
+     *
+     * @example
+     *  DateUtil::yearEndTime();
+     *  DateUtil::yearEndTime('1970');
+     *  DateUtil::yearEndTime('+1 year');
+     *  DateUtil::yearEndTime('2000-01-01');
+     *  DateUtil::yearEndTime('2000-01-01', 'Y-m-d');
      */
-    public static function getYearEndTime(?int $year = null): false|int
+    public static function yearEndTime(?string $date = null, ?string $format = null): false|int
     {
-        if (is_null($year) ) {
-            return strtotime(date('Y-12-31 23:59:59'));
-        }
-
-        if ($year < 1970) {
+        $formatDate = self::formatDate('Y-12-31 23:59:59', $date, $format);
+        if ($formatDate == '') {
             return false;
         }
-        return strtotime(date($year .'-12-31 23:59:59'));
+        return strtotime($formatDate);
     }
 
     /**
      * 年的结束时间
      *
-     * @param int|null $year
-     *  表示年的数字；如果等于null则返回当前年的结束时间，如果小于1970则返回空字符串
+     * @param string|null $date
+     *  日期或日期表达式，如果是null则默认日期为今年
+     *
      * @param string $format
      *  返回值的格式
+     *
      * @return string
-     *  成功：返回格式化后的日期；
+     *  成功：返回格式化后年的结束时间
      *  失败：返回空字符串
+     *
+     * @example
+     *  DateUtil::yearEnd();
+     *  DateUtil::yearEnd('+1 year');
+     *  DateUtil::yearEnd('2024-05-22');
+     *  DateUtil::yearEnd(null, 'Y-m-d H:i');
+     *  DateUtil::yearEnd('2024-05-22 12:12', 'Y-m-d H:i');
      */
-    public static function getYearEnd(?int $year = null, string $format = 'Y-m-d H:i:s'): string
+    public static function yearEnd(?string $date = null, string $format = 'Y-m-d H:i:s'): string
     {
-        $time = self::getYearEndTime($year);
+        $time = self::yearEndTime($date);
         return $time ? date($format, $time) : '';
     }
 
     /**
-     * 日期格式校验
-     *  $date格式必须与$format一致
+     * 校验日期格式
      *
      * @param string|null $date
+     *  日期或日期表达式
+     *
      * @param string $format
+     *  期待的$date的日期格式
      *
      * @return bool
+     *  成功：返回true
+     *  失败：返回false
+     *
+     * @example
+     *  DateUtil::isDate('2029-03-01');
+     *  DateUtil::isDate('1999', 'Y');
+     *  DateUtil::isDate('2023/02/01 12:12', 'Y/m/d H:i');
      */
     public static function isDate(?string $date, string $format = 'Y-m-d'): bool
     {
         if ($date == '') {
             return false;
         }
-        $result = self::format($date, $format);
-        return $result && $result == $date;
+        return !is_bool(self::getDateTime($date, $format));
     }
 
     /**
-     * 日期格式校验
-     *  $datetime格式必须是Y-m-d H:i:s
+     * 校验日期格式是否是"Y-m-d H:i:s"
      *
      * @param string|null $datetime
+     *  日期或日期表达式
      *
      * @return bool
+     *  成功：返回true
+     *  失败：返回false
+     *
+     * @example
+     *  DateUtil::isDatetime('2029-03-01 12:12:12');
      */
     public static function isDatetime(?string $datetime): bool
     {
@@ -616,33 +652,45 @@ class DateUtil
     }
 
     /**
-     * 是否为时间段
+     * 两个日期是否为时间段（即：$date 小于 $nextDate）
      *
-     * @param string|null $datetime
-     * @param string|null $nextDatetime
+     * @param string|null $date
+     * @param string|null $nextDate
+     *
      * @param string $format
+     *  $date 和 $nextDate 的日期格式
+     *
      * @return bool
+     *  成功：返回true
+     *  失败：返回false
+     *
+     * @example
+     *  DateUtil::isInterval('2024-01-11', '2024-02-01');
+     *  DateUtil::isInterval('2024-01-11 12:12', '2024-01-11 13:13', 'Y-m-d H:i');
      */
-    public static function isInterval(?string $datetime, ?string $nextDatetime, string $format = 'Y-m-d'): bool
+    public static function isInterval(?string $date, ?string $nextDate, string $format = 'Y-m-d'): bool
     {
-        $datetime = self::getDateTime($datetime, $format);
+        $datetime = self::getDateTime($date, $format);
         if (!$datetime) {
             return false;
         }
-        $nextDatetime = self::getDateTime($nextDatetime, $format);
+        $nextDatetime = self::getDateTime($nextDate, $format);
         if (!$nextDatetime) {
             return false;
         }
 
-        return ($nextDatetime->getTimestamp() - $datetime->getTimestamp()) >= 0;
+        return ($nextDatetime->getTimestamp() - $datetime->getTimestamp()) > 0;
     }
 
     /**
-     * 是否为时间段
+     * 两个格式为"Y-m-d H:i:s"的日期是否为时间段（即：$datetime 小于 $nextDatetime）
      *
      * @param string|null $datetime
      * @param string|null $nextDatetime
      * @return bool
+     *
+     * @example
+     *  DateUtil::isIntervalDatetime('2024-02-01 00:00:00', '2024-02-01 23:59:59');
      */
     public static function isIntervalDatetime(?string $datetime, ?string $nextDatetime): bool
     {
@@ -650,12 +698,21 @@ class DateUtil
     }
 
     /**
-     * 是否是未来日期
-     *  $date格式必须与$format一致
+     * 校验日期是否大于当前时间
      *
      * @param string|null $date
+     *  日期或日期表达式
+     *
      * @param string $format
+     *  $date的格式
+     *
      * @return bool
+     *  成功：返回true
+     *  失败：返回false
+     *
+     * @example
+     *  DateUtil::isFuture('2030-02-01');
+     *  DateUtil::isFuture('2030-01-01 21:00', 'Y-m-d H:i');
      */
     public static function isFuture(?string $date, string $format = 'Y-m-d'): bool
     {
@@ -664,16 +721,17 @@ class DateUtil
             return false;
         }
 
-        return $dateTime->getTimestamp() < time();
+        return $dateTime->getTimestamp() > time();
     }
 
     /**
-     * 是否是未来日期
-     *  $datetime格式必须是Y-m-d H:i:s
+     * 校验格式为"Y-m-d H:i:s"的日期是否大于当前时间
      *
      * @param string|null $datetime
-     *
      * @return bool
+     *
+     * @example
+     *  DateUtil::isFutureDatetime('2030-01-01 21:00:00');
      */
     public static function isFutureDatetime(?string $datetime): bool
     {
@@ -681,11 +739,15 @@ class DateUtil
     }
 
     /**
-     * 日期是否为今天
+     * 校验日期是否为今天的时间
      *
      * @param string|null $datetime
-     * @param string $format
+     * @param string $format $date的格式
      * @return true
+     *
+     * @example
+     *  DateUtil::isToday('2024-02-02 12:12:12');
+     *  DateUtil::isToday('2024-02-02', 'Y-m-d');
      */
     public static function isToday(?string $datetime, string $format = 'Y-m-d H:i:s'): bool
     {
@@ -700,13 +762,17 @@ class DateUtil
     }
 
     /**
-     * 日期是否为今天
+     * 校验日期是否为昨天的时间
      *
-     * @param string $datetime
-     * @param string $format
+     * @param string|null $datetime
+     * @param string $format $date的格式
      * @return true
+     *
+     * @example
+     *  DateUtil::isYesterday('2024-02-02 12:12:12');
+     *  DateUtil::isYesterday('2024-02-02', 'Y-m-d');
      */
-    public static function isYesterday(string $datetime, string $format = 'Y-m-d H:i:s'): bool
+    public static function isYesterday(?string $datetime, string $format = 'Y-m-d H:i:s'): bool
     {
         $dateTime = self::getDateTime($datetime, $format);
         if (!$dateTime) {
@@ -719,13 +785,17 @@ class DateUtil
     }
 
     /**
-     * 日期是否为今天
+     * 校验日期是否为明天的时间
      *
-     * @param string $datetime
-     * @param string $format
+     * @param string|null $datetime
+     * @param string $format $date的格式
      * @return true
+     *
+     * @example
+     *  DateUtil::isTomorrow('2024-02-02 12:12:12');
+     *  DateUtil::isTomorrow('2024-02-02', 'Y-m-d');
      */
-    public static function isTomorrow(string $datetime, string $format = 'Y-m-d H:i:s'): bool
+    public static function isTomorrow(?string $datetime, string $format = 'Y-m-d H:i:s'): bool
     {
         $dateTime = self::getDateTime($datetime, $format);
         if (!$dateTime) {
@@ -738,144 +808,158 @@ class DateUtil
     }
 
     /**
-     * 日期大小比较
-     *  $datetime/$nextDatetime格式必须与$format一致
+     * 日期比较
      *
-     * @param string|null $datetime
-     * @param string|null $nextDatetime
+     * @param string|null $date
+     *
      * @param string $compare
-     *  >, >=, <, <=, ==, <>
-     * @param string $format
+     *  用于日期比较的符号：'>', '>=', '<', '<=', '==', '!=', '<>', '<=>'
      *
-     * @return bool
+     * @param string|null $nextDate
+     * @param string $format
+     *  $date 和 $nextDate 的日期格式
+     *
+     * @return bool|int
+     *  组合比较（<=>）时返回int，其他比较返回bool
+     *
+     * @example
+     *  DateUtil::compare('2030-01-01', '>', '2020-01-01', 'Y-m-d');
+     *  DateUtil::compare('2020-01-02', '<=>', '2020-01-02', 'Y-m-d');
      */
-    public static function compare(?string $datetime, ?string $nextDatetime, string $compare = '>', string $format = 'Y-m-d'): bool
+    public static function compare(?string $date, string $compare, ?string $nextDate, string $format): bool|int
     {
-        if (!self::isDate($datetime, $format) || !self::isDate($nextDatetime, $format)) {
+        if (!in_array($compare, ['>', '>=', '<', '<=', '==', '!=', '<>', '<=>'], true)
+            || !self::isDate($date, $format)
+            || !self::isDate($nextDate, $format)
+        ) {
             return false;
         }
 
         $compare = trim($compare);
-        return eval("return \"strtotime($datetime)\" $compare \"strtotime($nextDatetime)\";");
+        return eval("return \"strtotime($date)\" $compare \"strtotime($nextDate)\";");
     }
 
     /**
-     * 日期大小比较
-     *  $datetime/$nextDatetime格式必须是Y-m-d H:i:s
-     *
-     * @param string|null $datetime
-     * @param string|null $nextDatetime
-     * @param string $compare
-     * @return bool
-     */
-    public static function compareDatetime(?string $datetime, ?string $nextDatetime, string $compare = '>'): bool
-    {
-        return self::compare($datetime, $nextDatetime, $compare, 'Y-m-d H:i:s');
-    }
-
-    /**
-     * 计算两个日期的年度差值
-     *  格式必须与$format一致
+     * 格式为"Y-m-d"的日期比较
      *
      * @param string|null $date
      * @param string|null $nextDate
-     * @param string $format
+     *
+     * @param string $compare
+     *  用于日期比较的符号：'>', '>=', '<', '<=', '==', '!=', '<>', '<=>'
+     *
      * @return bool|int
+     *  组合比较（<=>）时返回int，其他比较返回bool
+     *
+     * @example
+     *  DateUtil::compareDate('2020-01-02', '2020-01-01');
      */
-    public static function diffYears(?string $date, ?string $nextDate, string $format = 'Y-m-d H:i:s'): bool|int
+    public static function compareDate(?string $date, ?string $nextDate, string $compare = '>'): bool|int
     {
-        $firstDatetime = self::getDateTime($date, $format);
-        if (!$firstDatetime) {
-            return false;
-        }
-
-        $secondDatetime = self::getDateTime($nextDate, $format);
-        if (!$secondDatetime) {
-            return false;
-        }
-
-        return $secondDatetime->format('Y') - $firstDatetime->format('Y');
+        return self::compare($date, $compare, $nextDate, 'Y-m-d');
     }
 
     /**
-     * 计算两个日期的累计天数差值
-     *  日期格式必须与$format一致
+     * 格式为"Y-m-d H:i:s"的日期比较
+     *
+     * @param string|null $datetime
+     * @param string|null $nextDatetime
+     *
+     * @param string $compare
+     *  用于日期比较的符号：'>', '>=', '<', '<=', '==', '!=', '<>', '<=>'
+     *
+     * @return bool|int
+     *  组合比较（<=>）时返回int，其他比较返回bool
+     *
+     * @example
+     *  DateUtil::compareDatetime('2020-01-01 12:12:12', '2020-01-01 11:11:11');
+     */
+    public static function compareDatetime(?string $datetime, ?string $nextDatetime, string $compare = '>'): bool|int
+    {
+        return self::compare($datetime, $compare, $nextDatetime, 'Y-m-d H:i:s');
+    }
+
+    /**
+     * 获取两个日期的天数差值
      *
      * @param string|null $datetime
      * @param string|null $nextDatetime
      * @param string $format
-     * @return bool|int
-     */
-    public static function diffDays(?string $datetime, ?string $nextDatetime, string $format = 'Y-m-d H:i:s'): bool|int
-    {
-        $seconds = self::diffSeconds($datetime, $nextDatetime, $format);
-        if ($seconds === false) {
-            return false;
-        }
-
-        if ($seconds == 0) {
-            return 0;
-        }
-
-        return floor($seconds / 86400);
-    }
-
-    /**
-     * 计算两个日期的小时差值
-     *  $datetime/$nextDatetime格式必须与$format一致
+     *  $datetime 和 $nextDatetime 的日期格式
      *
-     * @param string|null $datetime
-     * @param string|null $nextDatetime
-     * @param string $format
-     * @return bool|int
+     * @return false|float
+     *
+     * @example
+     *  DateUtil::diffDays('2010-01-01', '2010-01-02', 'Y-m-d');
      */
-    public static function diffHours(?string $datetime, ?string $nextDatetime, string $format = 'Y-m-d H:i:s'): bool|int
+    public static function diffDays(?string $datetime, ?string $nextDatetime, string $format = 'Y-m-d H:i:s'): false|float
     {
         $seconds = self::diffSeconds($datetime, $nextDatetime, $format);
         if ($seconds === false) {
             return false;
         }
-
-        if ($seconds == 0) {
-            return 0;
-        }
-
-        return floor($seconds / 3600);
+        return $seconds / 86400;
     }
 
     /**
-     * 计算两个日期的分钟差值
-     *  $datetime/$nextDatetime格式必须与$format一致
+     * 获取两个日期的小时差值
      *
      * @param string|null $datetime
      * @param string|null $nextDatetime
      * @param string $format
-     * @return bool|int
+     *  $datetime 和 $nextDatetime 的日期格式
+     *
+     * @return false|float
+     *
+     * @example
+     *  DateUtil::diffHours('2010-01-01', '2010-01-02', 'Y-m-d');
      */
-    public static function diffMinutes(?string $datetime, ?string $nextDatetime, string $format = 'Y-m-d H:i:s'): bool|int
+    public static function diffHours(?string $datetime, ?string $nextDatetime, string $format = 'Y-m-d H:i:s'): false|float
     {
         $seconds = self::diffSeconds($datetime, $nextDatetime, $format);
         if ($seconds === false) {
             return false;
         }
-
-        if ($seconds == 0) {
-            return 0;
-        }
-
-        return floor($seconds / 60);
+        return $seconds / 3600;
     }
 
     /**
-     * 计算两个日期的秒差值
-     *  $datetime/$nextDatetime格式必须与$format一致
+     * 获取两个日期的分钟差值
      *
      * @param string|null $datetime
      * @param string|null $nextDatetime
      * @param string $format
-     * @return bool|int
+     *  $datetime 和 $nextDatetime 的日期格式
+     *
+     * @return false|float
+     *
+     * @example
+     *  DateUtil::diffMinutes('2010-01-01 12:12', '2010-01-01 13:12', 'Y-m-d H:i');
      */
-    public static function diffSeconds(?string $datetime, ?string $nextDatetime, string $format = 'Y-m-d H:i:s'): bool|int
+    public static function diffMinutes(?string $datetime, ?string $nextDatetime, string $format = 'Y-m-d H:i:s'): false|float
+    {
+        $seconds = self::diffSeconds($datetime, $nextDatetime, $format);
+        if ($seconds === false) {
+            return false;
+        }
+        return $seconds / 60;
+    }
+
+    /**
+     * 获取两个日期的秒差值
+     *
+     * @param string|null $datetime
+     * @param string|null $nextDatetime
+     *
+     * @param string $format
+     *  $datetime 和 $nextDatetime 的日期格式
+     *
+     * @return false|int
+     *
+     * @example
+     *  DateUtil::diffSeconds('2010-01-01 13:12:00', '2010-01-01 13:12:10');
+     */
+    public static function diffSeconds(?string $datetime, ?string $nextDatetime, string $format = 'Y-m-d H:i:s'): false|int
     {
         $firstDatetime = self::getDateTime($datetime, $format);
         if (!$firstDatetime) {
