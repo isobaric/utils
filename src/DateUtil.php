@@ -973,4 +973,22 @@ class DateUtil
 
         return $secondDatetime->getTimestamp() - $firstDatetime->getTimestamp();
     }
+
+    /**
+     * 格式化秒
+     *
+     * @param int|null $seconds
+     * @param string $separator
+     *  时分秒的分隔符
+     *
+     * @return string
+     */
+    public static function secondsToTime(?int $seconds, string $separator = ':'): string
+    {
+        if (is_null($seconds) || $seconds < 0) {
+            $seconds = 0;
+        }
+        $format = '%02d' . $separator . '%02d' . $separator . '%02d';
+        return sprintf($format, $seconds / 3600, ($seconds % 3600) / 60, $seconds % 60);
+    }
 }
