@@ -9,7 +9,7 @@ abstract class VerifyHelper extends RequestHelper
      *
      * @var string[]
      */
-    private $emailDefaultRegex = [
+    private array $emailDefaultRegex = [
         '/^([a-z0-9_.-]+)@([\da-z.-]+)\.([a-z.]{2,6})$/',
         '/^[a-z\d]+(\.[a-z\d]+)*@([\da-z](-[\da-z])?)+(\.{1,2}[a-z]+)+$/'
     ];
@@ -19,7 +19,7 @@ abstract class VerifyHelper extends RequestHelper
      *
      * @var string[]
      */
-    private $urlDefaultRegex = [
+    private array $urlDefaultRegex = [
         '/^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([\/\w.-]*)*\/?$/'
     ];
 
@@ -28,28 +28,28 @@ abstract class VerifyHelper extends RequestHelper
      *
      * @var string[]
      */
-    private $ipDefaultRegex = [
+    private array $ipDefaultRegex = [
         '/((2[0-4]\d|25[0-5]|[01]?\d\d?)\.){3}(2[0-4]\d|25[0-5]|[01]?\d\d?)/',
         '/^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$'
     ];
 
     // 校验方法
-    private $stringVerify = 'stringComplexVerify';
+    private string $stringVerify = 'stringComplexVerify';
 
     //
-    private $dateVerify = 'dateComplexVerify';
+    private string $dateVerify = 'dateComplexVerify';
 
     //
-    private $fileVerify = 'fileComplexVerify';
+    private string $fileVerify = 'fileComplexVerify';
 
     //
-    private $regexVerify = 'regexComplexVerify';
+    private string $regexVerify = 'regexComplexVerify';
 
     //
-    private $jsonVerify = 'jsonComplexVerify';
+    private string $jsonVerify = 'jsonComplexVerify';
 
     //
-    private $numberVerify = 'numberComplexVerify';
+    private string $numberVerify = 'numberComplexVerify';
 
     /**
      * 校验参数
@@ -111,34 +111,21 @@ abstract class VerifyHelper extends RequestHelper
      */
     protected function verifyParamsValue(): bool
     {
-        switch ($this->verifyType) {
-            case 'bool':
-                return $this->isBool();
-            case 'int':
-                return $this->multipleVerify($this->numberVerify, true);
-            case 'numeric':
-                return $this->multipleVerify($this->numberVerify, false);
-            case 'string':
-                return $this->multipleVerify($this->stringVerify);
-            case 'array':
-                return $this->isArray();
-            case 'list':
-                return $this->isList();
-            case 'date':
-                return $this->multipleVerify($this->dateVerify);
-            case 'file':
-               return $this->multipleVerify($this->fileVerify);
-            case 'email':
-                return $this->multipleVerify($this->regexVerify, $this->emailDefaultRegex);
-            case 'json':
-                return $this->multipleVerify($this->jsonVerify);
-            case 'url':
-                return $this->multipleVerify($this->regexVerify, $this->urlDefaultRegex);
-            case 'ip':
-                return $this->multipleVerify($this->regexVerify, $this->ipDefaultRegex);
-            default:
-                return true;
-        }
+        return match ($this->verifyType) {
+            'bool' => $this->isBool(),
+            'int' => $this->multipleVerify($this->numberVerify, true),
+            'numeric' => $this->multipleVerify($this->numberVerify, false),
+            'string' => $this->multipleVerify($this->stringVerify),
+            'array' => $this->isArray(),
+            'list' => $this->isList(),
+            'date' => $this->multipleVerify($this->dateVerify),
+            'file' => $this->multipleVerify($this->fileVerify),
+            'email' => $this->multipleVerify($this->regexVerify, $this->emailDefaultRegex),
+            'json' => $this->multipleVerify($this->jsonVerify),
+            'url' => $this->multipleVerify($this->regexVerify, $this->urlDefaultRegex),
+            'ip' => $this->multipleVerify($this->regexVerify, $this->ipDefaultRegex),
+            default => true,
+        };
     }
 
     /**
@@ -188,13 +175,11 @@ abstract class VerifyHelper extends RequestHelper
      */
     private function getNumberMessage(): string
     {
-        switch ($this->verifyFactor) {
-            case 'min':
-                return '不能小于' . $this->verifyRule['min'];
-            case 'max':
-                return '不能大于' . $this->verifyRule['max'];
-        }
-        return $this->getGeneralMessage();
+        return match ($this->verifyFactor) {
+            'min' => '不能小于' . $this->verifyRule['min'],
+            'max' => '不能大于' . $this->verifyRule['max'],
+            default => $this->getGeneralMessage(),
+        };
     }
 
     /**
@@ -204,13 +189,11 @@ abstract class VerifyHelper extends RequestHelper
      */
     private function getStringMessage(): string
     {
-        switch ($this->verifyFactor) {
-            case 'min':
-                return '长度不能小于' . $this->verifyRule['min'];
-            case 'max':
-                return '长度不能大于' . $this->verifyRule['max'];
-        }
-        return $this->getGeneralMessage();
+        return match ($this->verifyFactor) {
+            'min' => '长度不能小于' . $this->verifyRule['min'],
+            'max' => '长度不能大于' . $this->verifyRule['max'],
+            default => $this->getGeneralMessage(),
+        };
     }
 
     /**
@@ -220,13 +203,11 @@ abstract class VerifyHelper extends RequestHelper
      */
     private function getArrayMessage(): string
     {
-        switch ($this->verifyFactor) {
-            case 'min':
-                return '元素数量不能小于' . $this->verifyRule['min'];
-            case 'max':
-                return '元素数量不能大于' . $this->verifyRule['max'];
-        }
-        return $this->getGeneralMessage();
+        return match ($this->verifyFactor) {
+            'min' => '元素数量不能小于' . $this->verifyRule['min'],
+            'max' => '元素数量不能大于' . $this->verifyRule['max'],
+            default => $this->getGeneralMessage(),
+        };
     }
 
     /**
@@ -236,13 +217,11 @@ abstract class VerifyHelper extends RequestHelper
      */
     private function getDateMessage(): string
     {
-        switch ($this->verifyFactor) {
-            case 'min':
-                return '应该是' . $this->verifyRule['min'] . '及以后的日期';
-            case 'max':
-                return '应该是' . $this->verifyRule['max'] . '及以前的日期';
-        }
-        return $this->getGeneralMessage();
+        return match ($this->verifyFactor) {
+            'min' => '应该是' . $this->verifyRule['min'] . '及以后的日期',
+            'max' => '应该是' . $this->verifyRule['max'] . '及以前的日期',
+            default => $this->getGeneralMessage(),
+        };
     }
 
     /**
@@ -252,13 +231,11 @@ abstract class VerifyHelper extends RequestHelper
      */
     private function getFileMessage(): string
     {
-        switch ($this->verifyFactor) {
-            case 'min':
-                return'不能小于' . $this->verifyRule['min'] . 'KB';
-            case 'max':
-                return '不能超过' . $this->verifyRule['max'] . 'KB';
-        }
-        return $this->getGeneralMessage();
+        return match ($this->verifyFactor) {
+            'min' => '不能小于' . $this->verifyRule['min'] . 'KB',
+            'max' => '不能超过' . $this->verifyRule['max'] . 'KB',
+            default => $this->getGeneralMessage(),
+        };
     }
 
     /**
