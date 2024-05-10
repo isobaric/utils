@@ -5,8 +5,7 @@ namespace Isobaric\Utils;
 class NumericUtil
 {
     /**
-     * 是否为整数
-     *  注意：多个0时返回true，即 000 或 '000' 都是整数
+     * 是否为整数；注意：多个0时返回true，即 000 或 '000' 都是整数
      *
      * @param mixed $numeric
      * @return bool
@@ -54,8 +53,7 @@ class NumericUtil
     }
 
     /**
-     * 是否为小数
-     *  注意：0.0000 == 0.0 或 '0.0000' == 0.0
+     * 是否为小数；注意：0.0000 == 0.0 或 '0.0000' == 0.0
      *
      * @param mixed $numeric
      * @return bool
@@ -69,8 +67,8 @@ class NumericUtil
     }
 
     /**
-     * 是否为大于等于小数
-     *  >=0.0
+     * 是否为大于等于小数；>=0.0
+     *
      * @param mixed $numeric
      * @return bool
      */
@@ -80,8 +78,8 @@ class NumericUtil
     }
 
     /**
-     * 是否为大于0的小数
-     *  >=0.0...1
+     * 是否为大于0的小数；>=0.0...1
+     *
      * @param mixed $numeric
      * @return bool
      */
@@ -91,8 +89,8 @@ class NumericUtil
     }
 
     /**
-     * 是否为小于0的小数
-     *  < 0.0
+     * 是否为小于0的小数；< 0.0
+     *
      * @param mixed $numeric
      * @return bool
      */
