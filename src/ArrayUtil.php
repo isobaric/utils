@@ -189,7 +189,7 @@ class ArrayUtil
     }
 
     /**
-     * 驼峰（大驼峰或小驼峰）格式的下标转换为下划线格式，int下标不处理
+     * 将数组的驼峰（大驼峰或小驼峰）格式下标转换为下划线格式下标
      *
      * @param array $array
      * @return array
@@ -202,6 +202,24 @@ class ArrayUtil
                 $index = StringUtil::camelToUnderline($index);
             }
             $array[$index] = is_array($item) ? self::camelIndexToUnderline($item) : $item;
+        }
+        return $array;
+    }
+
+    /**
+     * 将数组的下划线格式下标转为小驼峰格式下标
+     *
+     * @param array $array
+     * @return array
+     */
+    public static function underlineIndexToCamel(array $array): array
+    {
+        foreach ($array as $index => $item) {
+            unset($array[$index]);
+            if (!is_int($index)) {
+                $index = StringUtil::underlineToCamel($index);
+            }
+            $array[$index] = is_array($item) ? self::underlineIndexToCamel($item) : $item;
         }
         return $array;
     }
