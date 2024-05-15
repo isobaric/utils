@@ -22,11 +22,20 @@ class StringUtil
      */
     public static function camelToUnderline(?string $camelCaseStr): string
     {
-        if (strlen($camelCaseStr) == 0) {
-            return '';
-        }
-
         $underlineStr = preg_replace('/(?<=\\w)(?=[A-Z])/', '_$1', $camelCaseStr);
         return strtolower($underlineStr);
+    }
+
+    /**
+     * 下滑线分割的字符串转为小驼峰字符串
+     *
+     * @param string|null $underlineString
+     * @return string
+     */
+    public static function underlineToCamel(?string $underlineString): string
+    {
+        return preg_replace_callback('/_([a-z])/', function($matches) {
+            return strtoupper($matches[1]);
+        }, $underlineString);
     }
 }
