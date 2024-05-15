@@ -187,4 +187,22 @@ class ArrayUtil
             return $a[$key] <=> $b[$key];
         });
     }
+
+    /**
+     * 驼峰（大驼峰或小驼峰）格式的下标转换为下划线格式，int下标不处理
+     *
+     * @param array $array
+     * @return array
+     */
+    public static function camelIndexToUnderline(array $array): array
+    {
+        foreach ($array as $index => $item) {
+            unset($array[$index]);
+            if (!is_int($index)) {
+                $index = StringUtil::camelToUnderline($index);
+            }
+            $array[$index] = is_array($item) ? self::camelIndexToUnderline($item) : $item;
+        }
+        return $array;
+    }
 }
