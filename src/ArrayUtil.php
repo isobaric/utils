@@ -84,7 +84,7 @@ class ArrayUtil
         if (!array_key_exists($key, $array)) {
             return false;
         }
-        return NumericUtil::isInt($array[$key]);
+        return NumberUtil::isInt($array[$key]);
     }
 
     /**
@@ -99,7 +99,7 @@ class ArrayUtil
         if (!array_key_exists($key, $array)) {
             return false;
         }
-        return NumericUtil::isPosInt($array[$key]);
+        return NumberUtil::isPosInt($array[$key]);
     }
 
     /**
@@ -114,7 +114,7 @@ class ArrayUtil
         if (!array_key_exists($key, $array)) {
             return false;
         }
-        return NumericUtil::isNatInt($array[$key]);
+        return NumberUtil::isNatInt($array[$key]);
     }
 
     /**
