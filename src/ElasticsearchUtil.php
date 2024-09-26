@@ -9,51 +9,51 @@ use Isobaric\Utils\Exceptions\ElasticsearchException;
 class ElasticsearchUtil
 {
     // $hosts为字符串时，则以config()方法获取配置信息，配置信息应为List数组
-    protected $hosts;
+    protected string|array $hosts;
 
     // 当前操作的ES的默认index
-    protected $index;
+    protected string $index;
 
     /**
      * ES Client 对象
      * @var Client|null
      */
-    private $client = null;
+    private ?Client $client = null;
 
     /**
      * @var array
      */
-    private $params;
+    private array $params;
 
     /**
      * 超时时间 单位秒
      * @var int
      */
-    private $timeout = 20;
+    private int $timeout = 20;
 
     /**
      * 超时时间 单位秒
      * @var int
      */
-    private $connectTimeout = 30;
+    private int $connectTimeout = 30;
 
     /**
      * 查询返回doc_id的key
      * @var string|null
      */
-    private $docIdStr = null;
+    private ?string $docIdStr = null;
 
     /**
      * ES的默认最大查询条目数
      * @var int
      */
-    private $maxSize = 10000;
+    private int $maxSize = 10000;
 
     /**
-     * @param string|array|null $hosts
+     * @param array|string|null $hosts
      * @param string|null       $index
      */
-    public function __construct($hosts = null, ?string $index = null)
+    public function __construct(array|string|null $hosts = null, ?string $index = null)
     {
         // 如果未初始化$host $index 则使用继承着的$host $index
         if (!is_null($hosts)) {
@@ -294,7 +294,7 @@ class ElasticsearchUtil
     public function search(array $params): array
     {
         // 如果query为空 则删除query字段 避免异常报错
-        if (isset($params['body']) && isset($params['body']['query']) && empty($params['body']['query'])) {
+        if (isset($params['body']['query']) && empty($params['body']['query'])) {
             unset($params['body']['query']);
         }
         $response = $this->client()->search($params);
@@ -334,7 +334,7 @@ class ElasticsearchUtil
      *      ];
      * @return array
      */
-    public function aggs(array $agg): array
+    public function aggregation(array $agg): array
     {
         if (!empty($agg)) {
             // 聚合查询时默认不获取列表，仅聚合数据结果，如需查询数据，使用size()方法
@@ -392,7 +392,7 @@ class ElasticsearchUtil
      * @param bool  $isUseBuilder
      * @return false|int
      */
-    public function updateByQuery(array $update, bool $isUseBuilder = true)
+    public function updateByQuery(array $update, bool $isUseBuilder = true): bool|int
     {
         if (empty($this->params['body']['query'])) {
             return false;
@@ -730,7 +730,7 @@ class ElasticsearchUtil
             $this->params['body']['query']['bool'][$field] = [];
         }
         // 则默认为list是三维数组
-        if (ArrayUtil::arrayIsList($params)) {
+        if (array_is_list($params)) {
             $this->params['body']['query']['bool'][$field] = array_merge(
                 $this->params['body']['query']['bool'][$field], $params
             );
@@ -753,8 +753,8 @@ class ElasticsearchUtil
             $this->params['index'] = $this->index;
         }
         if (is_null($this->client) || $this->client->ping() == false) {
-            if (is_string($this->hosts)) {
-                $hosts = config($this->hosts);
+            if (function_exists('\config') && is_string($this->hosts)) {
+                $hosts = \config($this->hosts);
             } else {
                 $hosts = $this->hosts;
             }
