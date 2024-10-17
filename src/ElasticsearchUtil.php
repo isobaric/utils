@@ -2,9 +2,8 @@
 
 namespace Isobaric\Utils;
 
-use Elasticsearch\Client;
-use Elasticsearch\ClientBuilder;
 use Isobaric\Utils\Exceptions\ElasticsearchException;
+use Elasticsearch\Client;
 
 class ElasticsearchUtil
 {
@@ -14,46 +13,26 @@ class ElasticsearchUtil
     // 当前操作的ES的默认index
     protected string $index;
 
-    /**
-     * ES Client 对象
-     * @var Client|null
-     */
-    private ?Client $client = null;
-
-    /**
-     * @var array
-     */
+    // params
     private array $params;
 
-    /**
-     * 超时时间 单位秒
-     * @var int
-     */
+    // 超时时间 单位秒
     private int $timeout = 20;
 
-    /**
-     * 超时时间 单位秒
-     * @var int
-     */
+    // 超时时间 单位秒
     private int $connectTimeout = 30;
 
-    /**
-     * 查询返回doc_id的key
-     * @var string|null
-     */
+    // 查询返回doc_id的key
     private ?string $docIdStr = null;
 
-    /**
-     * ES的默认最大查询条目数
-     * @var int
-     */
+    // ES的默认最大查询条目数
     private int $maxSize = 10000;
 
     /**
-     * @param array|string|null $hosts
+     * @param string|array|null $hosts
      * @param string|null       $index
      */
-    public function __construct(array|string|null $hosts = null, ?string $index = null)
+    public function __construct(null|string|array $hosts = null, ?string $index = null)
     {
         // 如果未初始化$host $index 则使用继承着的$host $index
         if (!is_null($hosts)) {
@@ -80,7 +59,7 @@ class ElasticsearchUtil
      *
      * @return $this
      */
-    public function debug(): ElasticsearchUtil
+    public function debug(): static
     {
         unset($this->params['client']['ignore']);
         return $this;
@@ -97,7 +76,7 @@ class ElasticsearchUtil
      *
      * @return $this
      */
-    public function setClientIgnore(array $ignore): ElasticsearchUtil
+    public function setClientIgnore(array $ignore): static
     {
         $this->params['client']['ignore'] = $ignore;
         return $this;
@@ -242,10 +221,10 @@ class ElasticsearchUtil
 
     /**
      * scroll查询全部记录
+     *  注意：不推荐使用当前方法，推荐使用 call() 方法替代
+     *       非脚本程序不推荐使用当前方法
      *
-     * 非脚本程序不推荐使用当前方法
-     *
-     * @param int $size 返回的记录条数 例 100
+     * @param int $size 单次查询的记录条数 例 100
      * @param string $scroll 游标时间 例 10s
      * @param ?string  $docId 不为Null时 以$docId为key返回doc_id的值
      * @return array
@@ -258,7 +237,9 @@ class ElasticsearchUtil
         // 获取结果
         $response = $this->search($this->params);
         // ES返回结果解析
-        $result[] = $this->responseDecode($response);
+        $result = [
+            $this->responseDecode($response)
+        ];
 
         // 使用游标查询全量数据
         $scrollId = $response['_scroll_id'];
@@ -282,6 +263,53 @@ class ElasticsearchUtil
             return [];
         }
         return array_reduce($result, 'array_merge', []);
+    }
+
+    /**
+     * 查询全量数据 并用回调方法处理
+     *  返回值为多次回调的返回值的数组
+     * @param callable $function 每一次查询的结果以数组格式传递给当前方法
+     * @param array $args $function的参数，$function的第一个参数是每一次的查询结果，其他参数是$args
+     * @param int $size
+     * @param string $scroll
+     * @param string|null $docId
+     * @return array
+     */
+    public function call(callable $function, array $args, int $size, string $scroll, ?string $docId = null): array
+    {
+        $result = [];
+        $this->docIdStr = $docId;
+        $this->params['body']['size'] = $size;
+        $this->params['scroll'] = $scroll;
+        // 获取结果
+        $response = $this->search($this->params);
+        // ES返回结果解析
+        $decodeData = $this->responseDecode($response);
+
+        $result[] = call_user_func_array($function, [$decodeData, ...$args]);
+
+        // 使用游标查询全量数据
+        $scrollId = $response['_scroll_id'];
+        while (isset($response['hits']['hits']) && count($response['hits']['hits']) > 0) {
+            $scrollId = $response['_scroll_id'];
+            unset($response);
+            // 使用游标查询
+            $response = $this->client()->scroll([
+                'scroll_id' => $scrollId,
+                'scroll' => $scroll
+            ]);
+            // 错误处理
+            $this->responseErrorHandler($response);
+            // ES返回结果解析
+            $decodeData = $this->responseDecode($response);
+
+            $result[] = call_user_func_array($function, [$decodeData, ...$args]);
+        }
+        // 移除游标
+        $this->client()->clearScroll(['scroll_id' => $scrollId]);
+        $this->setDefaultParams();
+
+        return $result;
     }
 
     /**
@@ -334,7 +362,7 @@ class ElasticsearchUtil
      *      ];
      * @return array
      */
-    public function aggregation(array $agg): array
+    public function aggs(array $agg): array
     {
         if (!empty($agg)) {
             // 聚合查询时默认不获取列表，仅聚合数据结果，如需查询数据，使用size()方法
@@ -370,9 +398,10 @@ class ElasticsearchUtil
      *        ]
      *   ]
      * ];
+     * @param bool $isDecode
      * @return array
      */
-    public function collapse(array $collapse): array
+    public function collapse(array $collapse, bool $isDecode = false): array
     {
         if (!empty($collapse)) {
             $this->params['body']['collapse'] = $collapse;
@@ -381,6 +410,10 @@ class ElasticsearchUtil
         $response = $this->search($this->params);
         $this->setDefaultParams();
         $this->responseErrorHandler($response);
+
+        if ($isDecode) {
+            return $this->responseDecode($response);
+        }
         return $response;
     }
 
@@ -446,7 +479,7 @@ class ElasticsearchUtil
          * 返回值result 等于 updated 表示更新成功；等于 noop 表示未更新
          * docId不存在或者其他情况 抛出异常
          */
-        return isset($response['result']);
+        return isset($response['result']) && $response['result'] == 'updated';
     }
 
     /**
@@ -469,7 +502,32 @@ class ElasticsearchUtil
          * 返回值result 等于 deleted 表示删除成功；等于 not_found 表示未发现需要删除的数据
          * docId不存在或者其他情况 抛出异常
          */
-        return isset($response['result']);
+        return isset($response['result']) && $response['result'] == 'deleted';
+    }
+
+    /**
+     * 返回受影响的行数
+     * @return bool|int
+     */
+    public function deleteByQuery(): bool|int
+    {
+        if (empty($this->params['body']['query'])) {
+            return false;
+        }
+
+        $response = $this->client()->deleteByQuery($this->params);
+        $this->setDefaultParams();
+        $this->responseErrorHandler($response);
+        /**
+         * $response：数组格式
+         * [
+         *   'total' => 2, // 符合条件的总记录数,
+         *   'deleted' => 0, // 删除的条数
+         * ]
+         *
+         * 没有异常信息 则认为更新成功
+         */
+        return $response['deleted'];
     }
 
     /**
@@ -519,11 +577,12 @@ class ElasticsearchUtil
      *          ['match' => ['classId' => 239403]],
      *          ['match' => ['type' => 1]]
      *      ];
+     *      $filter = [['match' => ['classId' => 239403]],['match' => ['type' => 1]]];
      *    2. 关联数组：
      *      $filter = ['match' => ['syllabusId' => 8912666250]]
      * @return $this
      */
-    public function filter(array $filter): ElasticsearchUtil
+    public function filter(array $filter): static
     {
         if (!empty($filter)) {
             $this->boolQueryBuilder('filter', $filter);
@@ -545,7 +604,7 @@ class ElasticsearchUtil
      *    $must = ['match' => ['syllabusId' => 8912666250]]
      * @return $this
      */
-    public function must(array $must): ElasticsearchUtil
+    public function must(array $must): static
     {
         if (!empty($must)) {
             $this->boolQueryBuilder('must', $must);
@@ -566,7 +625,7 @@ class ElasticsearchUtil
      *      $not = ['match' => ['syllabusId' => 8912666250]]
      * @return $this
      */
-    public function mustNot(array $not): ElasticsearchUtil
+    public function mustNot(array $not): static
     {
         if (!empty($not)) {
             $this->boolQueryBuilder('must_not', $not);
@@ -588,7 +647,7 @@ class ElasticsearchUtil
      *      $should = ['match' => ['syllabusId' => 8912666250]]
      * @return $this
      */
-    public function should(array $should): ElasticsearchUtil
+    public function should(array $should): static
     {
         if (!empty($should)) {
             $this->boolQueryBuilder('should', $should);
@@ -605,7 +664,7 @@ class ElasticsearchUtil
      * @param int $miniNum
      * @return $this
      */
-    public function shouldMatch(int $miniNum = 0): ElasticsearchUtil
+    public function shouldMatch(int $miniNum = 0): static
     {
         if (!isset($this->params['body']['query']['bool'])) {
             $this->params['body']['query']['bool'] = [];
@@ -628,7 +687,7 @@ class ElasticsearchUtil
      *  ];
      * @return $this
      */
-    public function query(array $query): ElasticsearchUtil
+    public function query(array $query): static
     {
         if (!empty($query)) {
             $this->params['body']['query'] = $query;
@@ -647,7 +706,7 @@ class ElasticsearchUtil
      *   ];
      * @return $this
      */
-    public function sort(array $sort): ElasticsearchUtil
+    public function sort(array $sort): static
     {
         if (!empty($sort)) {
             $this->params['body']['sort'] = $sort;
@@ -663,7 +722,7 @@ class ElasticsearchUtil
      *
      * @return $this
      */
-    public function limit(int $from, int $size): ElasticsearchUtil
+    public function limit(int $from, int $size): static
     {
         if ($from >= 0) {
             $this->params['body']['from'] = $from;
@@ -680,7 +739,7 @@ class ElasticsearchUtil
      * @param int $from
      * @return $this
      */
-    public function from(int $from): ElasticsearchUtil
+    public function from(int $from): static
     {
         if ($from >= 0) {
             $this->params['body']['from'] = $from;
@@ -694,10 +753,23 @@ class ElasticsearchUtil
      * @param int $size
      * @return $this
      */
-    public function size(int $size): ElasticsearchUtil
+    public function size(int $size): static
     {
         if ($size >= 0) {
             $this->params['body']['size'] = $size;
+        }
+        return $this;
+    }
+
+    /**
+     * 设置游标时间 例 10s
+     * @param string $scroll 例 10s
+     * @return $this
+     */
+    public function scroll(string $scroll): static
+    {
+        if ($scroll) {
+            $this->params['scroll'] = $scroll;
         }
         return $this;
     }
@@ -708,7 +780,7 @@ class ElasticsearchUtil
      * @param array $columns
      * @return $this
      */
-    public function select(array $columns): ElasticsearchUtil
+    public function select(array $columns): static
     {
         if (!empty($columns)) {
             $this->params['_source'] = $columns;
@@ -726,11 +798,11 @@ class ElasticsearchUtil
      */
     private function boolQueryBuilder(string $field, array $params): void
     {
-        if (empty($this->params['body']['query']['bool'][$field])) {
+        if (empty($this?->params['body']['query']['bool'][$field])) {
             $this->params['body']['query']['bool'][$field] = [];
         }
         // 则默认为list是三维数组
-        if (array_is_list($params)) {
+        if (\array_is_list($params)) {
             $this->params['body']['query']['bool'][$field] = array_merge(
                 $this->params['body']['query']['bool'][$field], $params
             );
@@ -752,15 +824,13 @@ class ElasticsearchUtil
         if (!empty($this->index)) {
             $this->params['index'] = $this->index;
         }
-        if (is_null($this->client) || $this->client->ping() == false) {
-            if (function_exists('\config') && is_string($this->hosts)) {
-                $hosts = \config($this->hosts);
-            } else {
-                $hosts = $this->hosts;
-            }
-            return ClientBuilder::create()->setHosts($hosts)->build();
+
+        if (function_exists('config') && is_string($this->hosts)) {
+            $hosts = config($this->hosts);
+        } else {
+            $hosts = $this->hosts;
         }
-        return $this->client;
+        return ConnectionPoolUtil::elasticsearch($hosts);
     }
 
     /**
@@ -777,12 +847,12 @@ class ElasticsearchUtil
             if (!is_string($key)) {
                 throw new ElasticsearchException('field ' . $key . ' is must string');
             }
-            $value = is_string($value) ? "'$value'" : $value;
-            $inline .= "ctx._source.$key=$value;";
+            $inline .= "ctx._source.$key=params.$key;";
         }
         return [
             'inline' => $inline,
-            'lang' => 'painless'
+            'lang' => 'painless',
+            'params' => $update
         ];
     }
 
@@ -804,5 +874,163 @@ class ElasticsearchUtil
                 'connect_timeout' => $this->connectTimeout
             ]
         ];
+    }
+
+    /**
+     * 重建索引的mapping
+     * @param array $params 参数应该包含index和mappings，mappings中应含有dynamic参数且值应是false
+     * @param string $sourceIndex 迁移数据的index
+     * @return true
+     */
+    public function reindex(array $params, string $sourceIndex): bool
+    {
+        // 新建索引 并将目标索引的数据reindex到新建的索引中 再删除目标索引
+        $this->indexCopy($params, $sourceIndex);
+        sleep(2);
+
+        // 新建目标索引 并将上一步的数据reindex到目标索引中 删除上一步创建的索引
+        $sourceIndex = $params['index'];
+        $params['index'] = $sourceIndex;
+        $this->indexCopy($params, $sourceIndex);
+
+        return true;
+    }
+
+    /**
+     * 新建索引 并将目标索引的数据reindex到新建的索引中 再删除目标索引
+     * @param array $params 新建索引的参数，参数中应该包含mapping
+     * @param string $sourceIndex 目标索引名称
+     * @return bool
+     */
+    public function indexCopy(array $params, string $sourceIndex): bool
+    {
+        // 使用 mapping 创建新的 index
+        $create = $this->client()->indices()->create($params);
+        $this->responseErrorHandler($create);
+        if (!$create['acknowledged']) {
+            throw new ElasticsearchException('create field');
+        }
+
+        // 将源索引 $sourceIndex 数据迁移到 index
+        $reindexBody = [
+            'body'  => [
+                'source' => [
+                    'index' => $sourceIndex,
+                ],
+                'dest' => [
+                    'index' => $params['index'],
+                ]
+            ],
+        ];
+        $reindex = $this->client()->reindex($reindexBody);
+        $this->responseErrorHandler($reindex);
+        if (!$reindex['created']) {
+            throw new ElasticsearchException('reindex field');
+        }
+
+        // 删除源索引 $sourceIndex
+        $delete = $this->client()->indices()->delete(['index' => $sourceIndex]);
+        $this->responseErrorHandler($delete);
+        if (!$delete['acknowledged']) {
+            throw new ElasticsearchException('delete index field');
+        }
+
+        return true;
+    }
+
+    /**
+     * 删除索引别名
+     * @param string $alias
+     * @param string|null $index 不为Null则删除指定名称的索引的别名
+     * @return bool
+     */
+    public function deleteIndexAlias(string $alias, ?string $index = null): bool
+    {
+        if (is_null($index)) {
+            $index = $this->index;
+        }
+        $actions = [
+            'body' => [
+                'actions' => [
+                    [
+                        'remove' => [
+                            'index' => $index,
+                            'alias' => $alias
+                        ]
+                    ]
+                ],
+            ]
+        ];
+        $updateAliases = $this->client()->indices()->updateAliases($actions);
+        $this->responseErrorHandler($updateAliases);
+        if (!$updateAliases['acknowledged']) {
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * 删除索引
+     * @param string|null $index
+     * @return bool
+     */
+    public function deleteIndex(?string $index = null): bool
+    {
+        if (is_null($index)) {
+            $index = $this->index;
+        }
+
+        $delete = $this->client()->indices()->delete(['index' => $index]);
+        $this->responseErrorHandler($delete);
+
+        if (!$delete['acknowledged']) {
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * 为index设置别名
+     * @param string $alias
+     * @param string|null $index
+     * @return bool
+     */
+    public function putAlias(string $alias, ?string $index = null): bool
+    {
+        if (is_null($index)) {
+            $index = $this->index;
+        }
+
+        $putAlias = $this->client()->indices()->putAlias(['index' => $index, 'name' => $alias]);
+        $this->responseErrorHandler($putAlias);
+
+        if (!$putAlias['acknowledged']) {
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     *
+     * @param array $mappings
+     * @param array $settings
+     * @param string|null $index
+     * @return bool
+     */
+    public function createIndex(array $mappings, array $settings, ?string $index = null): bool
+    {
+        $params = [
+            'index' => $index,
+            'body' => [
+                'settings' => $settings,
+                'mappings' => $mappings,
+            ]
+        ];
+        $create = $this->client()->indices()->create($params);
+
+        if (!$create['acknowledged']) {
+            return false;
+        }
+        return true;
     }
 }
