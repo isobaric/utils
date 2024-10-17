@@ -5,6 +5,12 @@
 
 # 版本说明
 
+## v0.2.0
+1. 优化 ElasticsearchUtil
+2. 新增 ConnectionPoolUtil，并应用于 ElasticsearchUtil
+3. 新增 ProcessUtl
+4. 重写 DateUtil
+
 ## v0.1.0
 1. 增加CURL工具：CurlUtil
 2. 增加接口请求参数校验工具：RequestUtil
