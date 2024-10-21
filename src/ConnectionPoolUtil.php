@@ -4,6 +4,7 @@ namespace Isobaric\Utils;
 
 use Elasticsearch\Client;
 use Elasticsearch\ClientBuilder;
+use Isobaric\Utils\Exceptions\ConnectionException;
 
 class ConnectionPoolUtil
 {
@@ -12,6 +13,18 @@ class ConnectionPoolUtil
      * @var array
      */
     private static array $pool = [];
+
+    /**
+     * 连接存活时间
+     * @var array
+     */
+    private static array $liveTime = [];
+
+    /**
+     * 连接超时时间 单位：秒
+     * @var int
+     */
+    private static int $liveTimeout = 10;
 
     /**
      * ES连接
@@ -40,7 +53,6 @@ class ConnectionPoolUtil
      *      'channel_max' => 指定服务器允许的最高通道号。0表示标准扩展限制；
      *      'frame_max'   => 服务器为连接建议的最大帧大小，包括帧头和结束字节。0表示标准扩展限制;
      *      'heartbeat'   => 0 则不设置心跳检测，大于0 则需要在回调中保持
-     *      'cacert' => PEM CA cert 客户端证书的路径
      *      'cert'   => PEM cert 客户端证书的路径
      *      'key'    => PEM格式的客户端密钥路径
      *      'verify' => 启用或禁用对等验证。如果启用了对等验证，则服务器证书必须与服务器名称匹配。默认情况下启用对等验证
@@ -68,27 +80,74 @@ class ConnectionPoolUtil
     }
 
     /**
+     * 获取连接
+     * @param string $index
+     * @return object|null
+     */
+    private static function getPool(string $index): object|null
+    {
+        return self::$pool[$index] ?? null;
+    }
+
+    /**
+     * 添加连接
+     * @param string $index
+     * @param object $connection
+     * @return void
+     */
+    private static function setPool(string $index, object $connection): void
+    {
+        self::$pool[$index] = $connection;
+    }
+
+    /**
+     * 获取连接存活时间
+     * @param string $index
+     * @return int|null
+     */
+    private static function getLiveTime(string $index): ?int
+    {
+        return self::$liveTime[$index] ?? null;
+    }
+
+    /**
+     * 设置连接存活时间
+     * @param string $index
+     * @return void
+     */
+    private static function setLiveTime(string $index): void
+    {
+        self::$liveTime[$index] = time();
+    }
+
+    /**
      * 获取连接池的有效连接
      * @param string $index
      * @return \AMQPConnection|Client|null
      */
     private static function getConnectionFromPool(string $index): \AMQPConnection|Client|null
     {
-        if (!array_key_exists($index, self::$pool)) {
-            return null;
-        }
-
         /**
          * @var \AMQPConnection|Client $connection
          */
-        $connection = self::$pool[$index];
+        $connection = self::getPool($index);
+        if (is_null($connection)) {
+            return null;
+        }
 
+        // 超时时间内不验证连接是否有效
+        $liveTime = self::getLiveTime($index);
+        if (!is_null($liveTime) && $liveTime <= self::$liveTimeout) {
+            return $connection;
+        }
+
+        // 验证连接是否有效
         if ($connection instanceof \AMQPConnection) {
             $isAlive = $connection->isConnected();
         } else if ($connection instanceof Client) {
             $isAlive = $connection->ping();
         } else {
-            throw new \RuntimeException('support');
+            throw new ConnectionException('connection not support ' . get_class($connection));
         }
 
         // 连接无效
@@ -113,7 +172,7 @@ class ConnectionPoolUtil
             // RabbitMQ
             'amqp' => new \AMQPConnection($config),
             // 不支持的连接
-            default => throw new \RuntimeException('support'),
+            default => throw new ConnectionException('connection not support ' . $name),
         };
     }
 
@@ -126,11 +185,17 @@ class ConnectionPoolUtil
     private static function getConnection(string $name, array $config): \AMQPConnection|Client
     {
         $index = self::poolIndex($name, $config);
-
         $connection = self::getConnectionFromPool($index);
         
         if (is_null($connection)) {
-            return self::getConnectionFromRemote($name, $config);
+            // 获取连接
+            $connection = self::getConnectionFromRemote($name, $config);
+
+            // 加入连接池
+            self::setPool($index, $connection);
+
+            // 重置连接时间
+            self::setLiveTime($index);
         }
 
         return $connection;
