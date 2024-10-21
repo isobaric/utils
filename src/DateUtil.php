@@ -22,7 +22,7 @@ class DateUtil
      * @param string         $separator 时分秒的分隔符
      * @return string
      */
-    public static function secondToTime(null|int|float $second, string $separator = ':'): string
+    public static function secondToTime(null|int|float $second = null, string $separator = ':'): string
     {
         if (is_null($second)) {
             $second = time();
