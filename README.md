@@ -9,7 +9,7 @@
 1. 优化 ElasticsearchUtil
 2. 新增 ConnectionPoolUtil，并应用于 ElasticsearchUtil
 3. 新增 ProcessUtl
-4. 重写 DateUtil
+4. DateUtil 新增格式化秒的方法
 
 ## v0.1.0
 1. 增加CURL工具：CurlUtil
