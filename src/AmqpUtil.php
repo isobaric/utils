@@ -42,10 +42,15 @@ class AmqpUtil
      */
     protected ?AMQPQueue $queue = null;
 
+    private string|null $queueFlag = null;
+
     /**
      * @var string
      */
     private string $exchangeName;
+
+    private string|null $exchangeType = null;
+    private string|null $exchangeFlag = null;
 
     /**
      * @param array|null $credentials
@@ -112,19 +117,19 @@ class AmqpUtil
      * @throws AMQPConnectionException
      * @throws AMQPExchangeException
      */
-    public function setExchange(string $exchangeName, string $exchangeType, int|null $flag = AMQP_DURABLE): static
+    public function setExchange(string $exchangeName, string $exchangeType, int|null $flag = \AMQP_DURABLE): static
     {
         // 初始化exchange对象
         $this->exchange = new AMQPExchange($this->channel);
 
-        // 设置类型
-        $this->exchange->setType($exchangeType);
         // 设置名称
         $this->exchange->setName($exchangeName);
-        // 设置标识
-        $this->exchange->setFlags($flag);
 
         $this->exchangeName = $exchangeName;
+
+        $this->exchangeType = $exchangeType;
+
+        $this->exchangeFlag = $flag;
 
         return $this;
     }
@@ -137,24 +142,15 @@ class AmqpUtil
      * @throws AMQPConnectionException
      * @throws AMQPQueueException
      */
-    public function setQueue(string $queueName, null|int $flag = AMQP_DURABLE): static
+    public function setQueue(string $queueName, null|int $flag = \AMQP_DURABLE): static
     {
         // 初始化queue对象
         $this->queue = new AMQPQueue($this->channel);
 
-        // 设置flag
-        /**
-         * AMQP_DURABLE 持久的交换和队列将在代理重启后幸存下来，并包含其所有数据。
-         * AMQP_PASSIVE 被动交换和队列不会被重新声明，但如果交换或队列不存在，代理将抛出错误
-         * AMQP_EXCLUSIVE 仅对队列有效，此标志表示只有一个客户端可以从该队列中侦听和消费。
-         * AMQP_AUTODELETE 自动删除
-         *  对于交换，自动删除标志表示一旦没有更多队列绑定到交换，该交换将被删除。如果没有队列绑定到该交换，则该交换将永远不会被删除。
-         *  对于队列，自动删除标志表示一旦没有更多的侦听器订阅该队列，该队列将被删除。如果没有订阅处于活动状态，则该队列将永远不会被删除。
-         *  注意：客户端断开连接时，独占队列将始终自动删除。
-         */
-        $this->queue->setFlags($flag);
         // 设置名称
         $this->queue->setName($queueName);
+
+        $this->queueFlag = $flag;
 
         return $this;
     }
@@ -213,13 +209,27 @@ class AmqpUtil
     ): void
     {
         // 声明交换机
+        $this->exchange->setType($this->exchangeType);
+        $this->exchange->setFlags($this->exchangeFlag);
         $this->exchange->declareExchange();
 
         // 声明队列
+        /**
+         * AMQP_DURABLE 持久的交换和队列将在代理重启后幸存下来，并包含其所有数据。
+         * AMQP_PASSIVE 被动交换和队列不会被重新声明，但如果交换或队列不存在，代理将抛出错误
+         * AMQP_EXCLUSIVE 仅对队列有效，此标志表示只有一个客户端可以从该队列中侦听和消费。
+         * AMQP_AUTODELETE 自动删除
+         *  对于交换，自动删除标志表示一旦没有更多队列绑定到交换，该交换将被删除。如果没有队列绑定到该交换，则该交换将永远不会被删除。
+         *  对于队列，自动删除标志表示一旦没有更多的侦听器订阅该队列，该队列将被删除。如果没有订阅处于活动状态，则该队列将永远不会被删除。
+         *  注意：客户端断开连接时，独占队列将始终自动删除。
+         */
+        $this->queue->setFlags($this->queueFlag);
         $this->queue->declareQueue();
 
         // 直连模式需要绑定交换机和路由
-        $this->queue->bind($this->exchangeName, $routingKey);
+        if ($this->exchangeType == \AMQP_EX_TYPE_DIRECT) {
+            $this->queue->bind($this->exchangeName, $routingKey);
+        }
 
         // 消费消息
         $this->queue->consume($callback, $flags, $consumerTag);
