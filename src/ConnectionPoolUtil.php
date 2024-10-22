@@ -24,7 +24,7 @@ class ConnectionPoolUtil
      * 连接超时时间 单位：秒
      * @var int
      */
-    private static int $liveTimeout = 10;
+    private static int $liveTimeout = 15;
 
     /**
      * ES连接
@@ -163,17 +163,22 @@ class ConnectionPoolUtil
      * @param string $name
      * @param array  $config
      * @return \AMQPConnection|Client
+     * @throws \AMQPConnectionException
      */
     private static function getConnectionFromRemote(string $name, array $config): \AMQPConnection|Client
     {
-        return match ($name) {
+        switch ($name) {
             // ES
-            'elasticsearch' => ClientBuilder::create()->setHosts($config)->build(),
+            case 'elasticsearch':
+                return ClientBuilder::create()->setHosts($config)->build();
             // RabbitMQ
-            'amqp' => new \AMQPConnection($config),
-            // 不支持的连接
-            default => throw new ConnectionException('connection not support ' . $name),
-        };
+            case 'amqp':
+                $connection = new \AMQPConnection($config);
+                $connection->connect();
+                return $connection;
+            default:
+                throw new ConnectionException('connection not support ' . $name);
+         }
     }
 
     /**
@@ -181,6 +186,7 @@ class ConnectionPoolUtil
      * @param string $name
      * @param array  $config
      * @return \AMQPConnection|Client
+     * @throws \AMQPConnectionException
      */
     private static function getConnection(string $name, array $config): \AMQPConnection|Client
     {
