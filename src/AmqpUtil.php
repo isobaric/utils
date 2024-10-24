@@ -55,7 +55,6 @@ class AmqpUtil
     /**
      * @param array|null $credentials
      * @see AMQPConnection::__construct
-     * @throws AMQPConnectionException
      */
     public function __construct(null|array $credentials = null)
     {
@@ -63,9 +62,21 @@ class AmqpUtil
         if (!is_null($credentials)) {
             $this->credentials = $credentials;
         }
+    }
+
+    /**
+     * 设置channel
+     * @return void
+     * @throws AMQPConnectionException
+     */
+    private function setChannel(): void
+    {
+        if (!is_null($this->connection)) {
+            return;
+        }
 
         // 建立连接
-        $this->connection = ConnectionPoolUtil::amqp($credentials);
+        $this->connection = ConnectionPoolUtil::amqp($this->credentials);
 
         // 初始化channel对象
         $this->channel = new AMQPChannel($this->connection);
@@ -119,6 +130,9 @@ class AmqpUtil
      */
     public function setExchange(string $exchangeName, string $exchangeType, int|null $flag = \AMQP_DURABLE): static
     {
+        // 初始化channel对象
+        $this->setChannel();
+
         // 初始化exchange对象
         $this->exchange = new AMQPExchange($this->channel);
 
@@ -144,8 +158,35 @@ class AmqpUtil
      */
     public function setQueue(string $queueName, null|int $flag = \AMQP_DURABLE): static
     {
+        // 初始化channel对象
+        $this->setChannel();
+
         // 初始化queue对象
         $this->queue = new AMQPQueue($this->channel);
+
+        /**
+         *
+         * 1. 当全部消费者不设置队列名称 仅设置相同的路由名称时，
+         *    情况1：生产者设置或不设置队列名称 仅设置路由名称时，则消息将同时发送给这些消费者
+         *    情况2：如果生产者不设置队列名称和路由名称，则消息发送到exchange后被丢弃
+         *
+         * 2. 当全部消费者不设置队列名称 且不设置路由名称时，
+         *    生产者也不设置队列名称和路由名称时，则消息将同时发送给这些消费者（使用了默认交换机）
+         *
+         * 3. 当一个消费者设置了队列名称 另一个消费者未设置队列名称 且两消费者都设置了相同路由名
+         *    情况1：生产者设置队列名称和路由名称，消息将同时发送给这两个消费者
+         *    情况2：生产者设置队列名称 不设置路由名称，则消息发送到exchange后被丢弃
+         *
+         * 4. 当一个消费者设置了队列名称且设置了路由名称 另一个消费者设置了相同的队列名 但未设置路由名
+         *    情况1：生产者设置队列名称和路由名称，消息将轮流发送给这些消费者
+         *    情况2：生产者设置队列名称但不是设置路由名称，消息将轮流发送给这些消费者
+         *    情况3：生产者不设置队列名称，仅设置路由名称时，消息将轮流发送给这些消费者
+         *
+         * 结论：
+         *  1 同名队列的消费者 轮流接收同名生产者的消息
+         *  2 同名路由的消费者 同时接收生产者消息
+         *  3 同名队列+同名路由消费者 轮流接收同名生产者的消息
+         */
 
         // 设置名称
         $this->queue->setName($queueName);
