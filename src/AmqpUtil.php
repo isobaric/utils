@@ -45,12 +45,14 @@ class AmqpUtil
     private string|null $queueFlag = null;
 
     /**
-     * @var string
+     * @var string|null
      */
-    private string $exchangeName;
+    private string|null $exchangeName = null;
 
     private string|null $exchangeType = null;
     private string|null $exchangeFlag = null;
+
+    private string|null $queueName = null;
 
     /**
      * @param array|null $credentials
@@ -69,7 +71,7 @@ class AmqpUtil
      * @return void
      * @throws AMQPConnectionException
      */
-    private function setChannel(): void
+    private function initChannel(): void
     {
         if (!is_null($this->connection)) {
             return;
@@ -121,51 +123,37 @@ class AmqpUtil
 
     /**
      * 设置exchange
-     * @param string   $exchangeName 名称
-     * @param string   $exchangeType 类型 | AMQP_EX_TYPE_DIRECT/AMQP_EX_TYPE_FANOUT/AMQP_EX_TYPE_HEADERS/AMQP_EX_TYPE_TOPIC
-     * @param int|null $flag         标识 | AMQP_DURABLE / AMQP_PASSIVE / AMQP_EXCLUSIVE / AMQP_AUTODELETE
-     * @return $this
+     * @return void
      * @throws AMQPConnectionException
      * @throws AMQPExchangeException
      */
-    public function setExchange(string $exchangeName, string $exchangeType, int|null $flag = \AMQP_DURABLE): static
+    private function initExchange(): void
     {
         // 初始化channel对象
-        $this->setChannel();
+        $this->initChannel();
 
         // 初始化exchange对象
         $this->exchange = new AMQPExchange($this->channel);
 
         // 设置名称
-        $this->exchange->setName($exchangeName);
-
-        $this->exchangeName = $exchangeName;
-
-        $this->exchangeType = $exchangeType;
-
-        $this->exchangeFlag = $flag;
-
-        return $this;
+        $this->exchange->setName($this->exchangeName);
     }
 
     /**
-     * 设置queue
-     * @param string   $queueName 名称
-     * @param int|null $flag 标识 | AMQP_DURABLE / AMQP_PASSIVE / AMQP_EXCLUSIVE / AMQP_AUTODELETE
-     * @return $this
+     * @return void
      * @throws AMQPConnectionException
      * @throws AMQPQueueException
      */
-    public function setQueue(string $queueName, null|int $flag = \AMQP_DURABLE): static
+    public function initQueue(): void
     {
         // 初始化channel对象
-        $this->setChannel();
+        $this->initChannel();
 
         // 初始化queue对象
         $this->queue = new AMQPQueue($this->channel);
 
         /**
-         *
+         * Exchange为direct时 存在以下情况：
          * 1. 当全部消费者不设置队列名称 仅设置相同的路由名称时，
          *    情况1：生产者设置或不设置队列名称 仅设置路由名称时，则消息将同时发送给这些消费者
          *    情况2：如果生产者不设置队列名称和路由名称，则消息发送到exchange后被丢弃
@@ -187,12 +175,51 @@ class AmqpUtil
          *  2 同名路由的消费者 同时接收生产者消息
          *  3 同名队列+同名路由消费者 轮流接收同名生产者的消息
          */
+    }
 
-        // 设置名称
-        $this->queue->setName($queueName);
+    /**
+     * 设置exchange
+     * @param string   $exchangeName 名称
+     * @param string   $exchangeType 类型 | AMQP_EX_TYPE_DIRECT/AMQP_EX_TYPE_FANOUT/AMQP_EX_TYPE_HEADERS/AMQP_EX_TYPE_TOPIC
+     * @param int|null $flag         标识 | AMQP_DURABLE / AMQP_PASSIVE / AMQP_EXCLUSIVE / AMQP_AUTODELETE
+     * @return $this
+     */
+    public function setExchange(string $exchangeName, string $exchangeType, int|null $flag = \AMQP_DURABLE): static
+    {
+        /**
+         * AMQP_DURABLE 持久的交换和队列将在代理重启后幸存下来，并包含其所有数据。
+         * AMQP_PASSIVE 被动交换和队列不会被重新声明，但如果交换或队列不存在，代理将抛出错误
+         * AMQP_EXCLUSIVE 仅对队列有效，此标志表示只有一个客户端可以从该队列中侦听和消费。
+         * AMQP_AUTODELETE 自动删除
+         *  对于交换，自动删除标志表示一旦没有更多队列绑定到交换，该交换将被删除。如果没有队列绑定到该交换，则该交换将永远不会被删除。
+         *  对于队列，自动删除标志表示一旦没有更多的侦听器订阅该队列，该队列将被删除。如果没有订阅处于活动状态，则该队列将永远不会被删除。
+         *  注意：客户端断开连接时，独占队列将始终自动删除。
+         */
+        $this->exchangeName = $exchangeName;
+        $this->exchangeType = $exchangeType;
+        $this->exchangeFlag = $flag;
+        return $this;
+    }
 
+    /**
+     * 设置queue
+     * @param string   $queueName 名称
+     * @param int|null $flag 标识 | AMQP_DURABLE / AMQP_PASSIVE / AMQP_EXCLUSIVE / AMQP_AUTODELETE
+     * @return $this
+     */
+    public function setQueue(string $queueName, null|int $flag = \AMQP_DURABLE): static
+    {
+        /**
+         * AMQP_DURABLE 持久的交换和队列将在代理重启后幸存下来，并包含其所有数据。
+         * AMQP_PASSIVE 被动交换和队列不会被重新声明，但如果交换或队列不存在，代理将抛出错误
+         * AMQP_EXCLUSIVE 仅对队列有效，此标志表示只有一个客户端可以从该队列中侦听和消费。
+         * AMQP_AUTODELETE 自动删除
+         *  对于交换，自动删除标志表示一旦没有更多队列绑定到交换，该交换将被删除。如果没有队列绑定到该交换，则该交换将永远不会被删除。
+         *  对于队列，自动删除标志表示一旦没有更多的侦听器订阅该队列，该队列将被删除。如果没有订阅处于活动状态，则该队列将永远不会被删除。
+         *  注意：客户端断开连接时，独占队列将始终自动删除。
+         */
+        $this->queueName = $queueName;
         $this->queueFlag = $flag;
-
         return $this;
     }
 
@@ -219,13 +246,29 @@ class AmqpUtil
             $message = serialize($message);
         }
 
-        if (is_null($this->queue)) {
+        if (is_null($this->exchangeName)) {
+            throw new AMQPExchangeException('before publish the exchange must be initialized with function setExchange()');
+        }
+
+        if (is_null($this->queueName)) {
             throw new AMQPQueueException('before publish the queue must be initialized with function setQueue()');
         }
 
-        if (is_null($this->exchange)) {
-            throw new AMQPExchangeException('before publish the exchange must be initialized with function setExchange()');
-        }
+        // 声明交换机
+        $this->initExchange();
+        $this->exchange->setType($this->exchangeType);
+        $this->exchange->declareExchange();
+
+        // 声明队列
+        $this->initQueue();
+        $this->queue->setName($this->queueName);
+        $this->queue->setFlags($this->queueFlag);
+        $this->queue->declareQueue();
+
+        // 绑定交换机和路由
+        $this->queue->bind($this->exchangeName, $routingKey);
+
+        // 消息发送
         $this->exchange->publish($message, $routingKey, $flags, $headers);
     }
 
@@ -250,29 +293,19 @@ class AmqpUtil
     ): void
     {
         // 声明交换机
+        $this->initExchange();
         $this->exchange->setType($this->exchangeType);
-        $this->exchange->setFlags($this->exchangeFlag);
         $this->exchange->declareExchange();
 
         // 声明队列
-        /**
-         * AMQP_DURABLE 持久的交换和队列将在代理重启后幸存下来，并包含其所有数据。
-         * AMQP_PASSIVE 被动交换和队列不会被重新声明，但如果交换或队列不存在，代理将抛出错误
-         * AMQP_EXCLUSIVE 仅对队列有效，此标志表示只有一个客户端可以从该队列中侦听和消费。
-         * AMQP_AUTODELETE 自动删除
-         *  对于交换，自动删除标志表示一旦没有更多队列绑定到交换，该交换将被删除。如果没有队列绑定到该交换，则该交换将永远不会被删除。
-         *  对于队列，自动删除标志表示一旦没有更多的侦听器订阅该队列，该队列将被删除。如果没有订阅处于活动状态，则该队列将永远不会被删除。
-         *  注意：客户端断开连接时，独占队列将始终自动删除。
-         */
+        $this->initQueue();
         $this->queue->setFlags($this->queueFlag);
         $this->queue->declareQueue();
 
-        // 直连模式需要绑定交换机和路由
-        if ($this->exchangeType == \AMQP_EX_TYPE_DIRECT) {
-            $this->queue->bind($this->exchangeName, $routingKey);
-        }
+        // 绑定路由Key到交换机
+        $this->queue->bind($this->exchangeName, $routingKey);
 
-        // 消费消息
+        // 消费数据
         $this->queue->consume($callback, $flags, $consumerTag);
     }
 
@@ -290,5 +323,57 @@ class AmqpUtil
     public static function headersPublish()
     {
 
+    }
+
+    public function directPublish(string $exchangeName, string $queueName, string $routingKey, string $message)
+    {
+        $connection = new \AMQPConnection($this->credentials);
+        $connection->connect();
+
+        //Declare Channel
+        $channel = new AMQPChannel($connection);
+
+        //Declare Exchange
+        $exchange = new AMQPExchange($channel);
+        $exchange->setType(AMQP_EX_TYPE_DIRECT);
+        $exchange->setName($exchangeName);
+        $exchange->declareExchange();
+
+        $queue = new AMQPQueue($channel);
+        $queue->setFlags(AMQP_EXCLUSIVE);
+        $queue->setName($queueName);
+        $queue->declareQueue();
+
+        $queue->bind($exchangeName, $routingKey);
+
+        $exchange->publish($message, $routingKey);
+
+        echo 'message: ' . $message . PHP_EOL;
+        echo 'routing key: ' . $routingKey . PHP_EOL;
+    }
+
+    public function directConsum(callable $callback, string $exchangeName, string $queueName, string $routingKey)
+    {
+        $connection = new \AMQPConnection($this->credentials);
+        $connection->connect();
+        //Declare Channel
+        $channel = new AMQPChannel($connection);
+
+        //Declare Exchange
+        $exchange = new AMQPExchange($channel);
+        $exchange->setType(AMQP_EX_TYPE_DIRECT);
+        $exchange->setName($exchangeName);
+        $exchange->declareExchange();
+
+        //Declare Queue
+        $queue = new AMQPQueue($channel);
+        $queue->setFlags(AMQP_EXCLUSIVE);
+        $queue->declareQueue();
+
+        $queue->bind($exchangeName, $routingKey);
+
+        echo $routingKey . PHP_EOL;
+
+        $queue->consume($callback);
     }
 }
