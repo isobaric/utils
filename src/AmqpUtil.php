@@ -284,6 +284,7 @@ class AmqpUtil
         // 声明交换机
         $this->initExchange();
         $this->exchange->setType($this->exchangeType);
+        $this->exchange->setFlags($this->exchangeFlag);
         $this->exchange->declareExchange();
 
         // 声明队列
