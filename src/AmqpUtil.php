@@ -256,17 +256,6 @@ class AmqpUtil
 
         // 声明交换机
         $this->initExchange();
-        $this->exchange->setType($this->exchangeType);
-        $this->exchange->declareExchange();
-
-        // 声明队列
-        $this->initQueue();
-        $this->queue->setName($this->queueName);
-        $this->queue->setFlags($this->queueFlag);
-        $this->queue->declareQueue();
-
-        // 绑定交换机和路由
-        $this->queue->bind($this->exchangeName, $routingKey);
 
         // 消息发送
         $this->exchange->publish($message, $routingKey, $flags, $headers);
@@ -299,6 +288,7 @@ class AmqpUtil
 
         // 声明队列
         $this->initQueue();
+        $this->queue->setName($this->queueName);
         $this->queue->setFlags($this->queueFlag);
         $this->queue->declareQueue();
 
