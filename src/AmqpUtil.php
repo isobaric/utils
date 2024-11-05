@@ -23,28 +23,36 @@ class AmqpUtil
     protected array $credentials;
 
     /**
+     * 消费者预取数量
+     * @var int
+     */
+    protected int $prefetchCount = 20;
+
+    protected int $heartbeat = 60;
+
+    /**
      * connection
      * @var AMQPConnection|null
      */
-    protected ?AMQPConnection $connection = null;
+    private ?AMQPConnection $connection = null;
 
     /**
      * channel
      * @var AMQPChannel|null
      */
-    protected ?AMQPChannel $channel = null;
+    private ?AMQPChannel $channel = null;
 
     /**
      * exchange
      * @var AMQPExchange|null
      */
-    protected ?AMQPExchange $exchange = null;
+    private ?AMQPExchange $exchange = null;
 
     /**
      * queue
      * @var AMQPQueue|null
      */
-    protected ?AMQPQueue $queue = null;
+    private ?AMQPQueue $queue = null;
 
     /**
      * 队列特性
@@ -93,6 +101,17 @@ class AmqpUtil
     }
 
     /**
+     * 设置消费者的预取数量
+     * @param int $count
+     * @return $this
+     */
+    public function setPrefetchCount(int $count): static
+    {
+        $this->prefetchCount = $count;
+        return $this;
+    }
+
+    /**
      * 关闭连接
      * @return void
      * @throws AMQPConnectionException
@@ -102,32 +121,32 @@ class AmqpUtil
         $this->connection->disconnect();
     }
 
-    /**
-     * 获取连接
-     * @return AMQPConnection
-     */
-    public function getConnection(): AMQPConnection
-    {
-        return $this->connection;
-    }
-
-    /**
-     * 获取channel
-     * @return AMQPChannel
-     */
-    public function getChannel(): AMQPChannel
-    {
-        return $this->channel;
-    }
-
-    /**
-     * 获取exchange
-     * @return AMQPExchange
-     */
-    public function getExchange(): AMQPExchange
-    {
-        return $this->exchange;
-    }
+//    /**
+//     * 获取连接
+//     * @return AMQPConnection|null
+//     */
+//    public function getConnection(): ?AMQPConnection
+//    {
+//        return $this->connection;
+//    }
+//
+//    /**
+//     * 获取channel
+//     * @return AMQPChannel|null
+//     */
+//    public function getChannel(): ?AMQPChannel
+//    {
+//        return $this->channel;
+//    }
+//
+//    /**
+//     * 获取exchange
+//     * @return AMQPExchange|null
+//     */
+//    public function getExchange(): ?AMQPExchange
+//    {
+//        return $this->exchange;
+//    }
 
     /**
      * 设置channel
@@ -207,7 +226,7 @@ class AmqpUtil
      * 设置exchange
      * @param string      $exchangeName 交换机名称
      * @param string|null $exchangeType 交换机类型；当前参数仅用于消费者；
-     * @param string|null $flag         交换机flag；当前参数仅用于消费者；
+     * @param string|null $flag 交换机flag；当前参数仅用于消费者；
      *   flag取值：
      *       AMQP_DURABLE 持久的交换和队列将在代理重启后幸存下来，并包含其所有数据。
      *       AMQP_PASSIVE 被动交换和队列不会被重新声明，但如果交换或队列不存在，代理将抛出错误
@@ -227,8 +246,8 @@ class AmqpUtil
 
     /**
      * 设置queue
-     * @param string   $queueName   队列名称
-     * @param int|null $flag        队列模式；当前参数仅用于消费者；
+     * @param string   $queueName 队列名称
+     * @param int|null $flag 队列模式；当前参数仅用于消费者；
      *  flag取值：
      *      AMQP_DURABLE 持久的交换和队列将在代理重启后幸存下来，并包含其所有数据。
      *      AMQP_PASSIVE 被动交换和队列不会被重新声明，但如果交换或队列不存在，代理将抛出错误
@@ -263,7 +282,7 @@ class AmqpUtil
         }
 
         if (is_null($this->exchangeName)) {
-            throw new AMQPExchangeException('before publish the exchange must be initialized with function setExchange()');
+            throw new AMQPExchangeException('Exchange must be initialized with function setExchange()');
         }
 
         // 设置交换机
@@ -289,7 +308,7 @@ class AmqpUtil
     public function consume(callable $callback, ?string $routingKey = null, ?int $flags = null, ?string $consumerTag = null): void
     {
         if (is_null($this->exchangeName)) {
-            throw new AMQPExchangeException('before consume the exchange must be initialized with function setExchange()');
+            throw new AMQPExchangeException('Exchange must be initialized with function setExchange()');
         }
 
         if (is_null($this->exchangeType)) {
@@ -297,8 +316,11 @@ class AmqpUtil
         }
 
         if (is_null($this->queueName)) {
-            throw new AMQPQueueException('before consume the queue must be initialized with function setQueue()');
+            throw new AMQPQueueException('Queue must be initialized with function setQueue()');
         }
+
+        // 设置预取消息数量
+        $this->channel->setPrefetchCount($this->prefetchCount);
 
         // 声明交换机
         $this->initExchange();
