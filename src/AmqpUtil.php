@@ -21,29 +21,66 @@ class AmqpUtil
      * @see \AMQPConnection::__construct()
      */
     protected array $credentials;
+
+    /**
+     * connection
+     * @var AMQPConnection|null
+     */
     protected ?AMQPConnection $connection = null;
+
+    /**
+     * channel
+     * @var AMQPChannel|null
+     */
     protected ?AMQPChannel $channel = null;
+
+    /**
+     * exchange
+     * @var AMQPExchange|null
+     */
     protected ?AMQPExchange $exchange = null;
+
+    /**
+     * queue
+     * @var AMQPQueue|null
+     */
     protected ?AMQPQueue $queue = null;
 
     /**
-     * 标识
+     * 队列特性
      *  取值: AMQP_DURABLE / AMQP_PASSIVE / AMQP_EXCLUSIVE / AMQP_AUTODELETE
      * @var string|null
      */
     private ?string $queueFlag = null;
+
+    /**
+     * 队列名称
+     * @var string|null
+     */
     private ?string $queueName = null;
 
     /**
-     * 交换机类型
-     *  取值: AMQP_EX_TYPE_DIRECT/AMQP_EX_TYPE_FANOUT/AMQP_EX_TYPE_HEADERS/AMQP_EX_TYPE_TOPIC
+     * 交换机特性
+     *  取值: AMQP_EX_TYPE_DIRECT / AMQP_EX_TYPE_FANOUT / AMQP_EX_TYPE_HEADERS / AMQP_EX_TYPE_TOPIC
      * @var string|null
      */
-    private ?string $exchangeType = null;
-    private ?string $exchangeName = null;
     private ?string $exchangeFlag = null;
 
     /**
+     * 交换机类型
+     *  取值: AMQP_EX_TYPE_DIRECT / AMQP_EX_TYPE_FANOUT / AMQP_EX_TYPE_TOPIC / AMQP_EX_TYPE_HEADERS
+     * @var string|null
+     */
+    private ?string $exchangeType = null;
+
+    /**
+     * 交换机名称
+     * @var string|null
+     */
+    private ?string $exchangeName = null;
+
+    /**
+     * 初始化参数
      * @param array|null $credentials
      * @see AMQPConnection::__construct
      */
