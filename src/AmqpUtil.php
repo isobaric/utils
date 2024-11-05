@@ -21,38 +21,16 @@ class AmqpUtil
      * @see \AMQPConnection::__construct()
      */
     protected array $credentials;
-
-    /**
-     * @var AMQPConnection|null
-     */
     protected ?AMQPConnection $connection = null;
-
-    /**
-     * @var AMQPChannel|null
-     */
     protected ?AMQPChannel $channel = null;
-
-    /**
-     * @var AMQPExchange|null
-     */
     protected ?AMQPExchange $exchange = null;
-
-    /**
-     * @var AMQPQueue|null
-     */
     protected ?AMQPQueue $queue = null;
 
-    private string|null $queueFlag = null;
-
-    /**
-     * @var string|null
-     */
-    private string|null $exchangeName = null;
-
-    private string|null $exchangeType = null;
-    private string|null $exchangeFlag = null;
-
-    private string|null $queueName = null;
+    private ?string $queueFlag = null;
+    private ?string $exchangeName = null;
+    private ?string $exchangeType = null;
+    private ?string $exchangeFlag = null;
+    private ?string $queueName = null;
 
     /**
      * @param array|null $credentials
@@ -64,24 +42,6 @@ class AmqpUtil
         if (!is_null($credentials)) {
             $this->credentials = $credentials;
         }
-    }
-
-    /**
-     * 设置channel
-     * @return void
-     * @throws AMQPConnectionException
-     */
-    private function initChannel(): void
-    {
-        if (!is_null($this->connection)) {
-            return;
-        }
-
-        // 建立连接
-        $this->connection = ConnectionPoolUtil::amqp($this->credentials);
-
-        // 初始化channel对象
-        $this->channel = new AMQPChannel($this->connection);
     }
 
     /**
@@ -122,6 +82,24 @@ class AmqpUtil
     }
 
     /**
+     * 设置channel
+     * @return void
+     * @throws AMQPConnectionException
+     */
+    private function initChannel(): void
+    {
+        if (!is_null($this->connection)) {
+            return;
+        }
+
+        // 建立连接
+        $this->connection = ConnectionPoolUtil::amqp($this->credentials);
+
+        // 初始化channel对象
+        $this->channel = new AMQPChannel($this->connection);
+    }
+
+    /**
      * 设置exchange
      * @return void
      * @throws AMQPConnectionException
@@ -144,7 +122,7 @@ class AmqpUtil
      * @throws AMQPConnectionException
      * @throws AMQPQueueException
      */
-    public function initQueue(): void
+    private function initQueue(): void
     {
         // 初始化channel对象
         $this->initChannel();
