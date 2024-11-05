@@ -171,6 +171,13 @@ class AmqpUtil
      * @param string      $exchangeName 交换机名称
      * @param string|null $exchangeType 交换机类型；当前参数仅用于消费者；
      * @param string|null $flag         交换机flag；当前参数仅用于消费者；
+     *   flag取值：
+     *       AMQP_DURABLE 持久的交换和队列将在代理重启后幸存下来，并包含其所有数据。
+     *       AMQP_PASSIVE 被动交换和队列不会被重新声明，但如果交换或队列不存在，代理将抛出错误
+     *       AMQP_EXCLUSIVE 仅对队列有效，此标志表示只有一个客户端可以从该队列中侦听和消费。
+     *       AMQP_AUTODELETE 自动删除
+     *       对于交换，自动删除标志表示一旦没有更多队列绑定到交换，该交换将被删除。如果没有队列绑定到该交换，则该交换将永远不会被删除。
+     *       注意：客户端断开连接时，独占队列将始终自动删除。
      * @return $this
      */
     public function setExchange(string $exchangeName, ?string $exchangeType = null, ?string $flag = \AMQP_DURABLE): static
@@ -185,19 +192,17 @@ class AmqpUtil
      * 设置queue
      * @param string   $queueName   队列名称
      * @param int|null $flag        队列模式；当前参数仅用于消费者；
+     *  flag取值：
+     *      AMQP_DURABLE 持久的交换和队列将在代理重启后幸存下来，并包含其所有数据。
+     *      AMQP_PASSIVE 被动交换和队列不会被重新声明，但如果交换或队列不存在，代理将抛出错误
+     *      AMQP_EXCLUSIVE 仅对队列有效，此标志表示只有一个客户端可以从该队列中侦听和消费。
+     *      AMQP_AUTODELETE 自动删除
+     *      对于队列，自动删除标志表示一旦没有更多的消费者订阅该队列，该队列将被删除。如果没有订阅处于活动状态，则该队列将永远不会被删除。
+     *      注意：客户端断开连接时，独占队列将始终自动删除。
      * @return $this
      */
     public function setQueue(string $queueName, null|int $flag = \AMQP_DURABLE): static
     {
-        /**
-         * AMQP_DURABLE 持久的交换和队列将在代理重启后幸存下来，并包含其所有数据。
-         * AMQP_PASSIVE 被动交换和队列不会被重新声明，但如果交换或队列不存在，代理将抛出错误
-         * AMQP_EXCLUSIVE 仅对队列有效，此标志表示只有一个客户端可以从该队列中侦听和消费。
-         * AMQP_AUTODELETE 自动删除
-         *  对于交换，自动删除标志表示一旦没有更多队列绑定到交换，该交换将被删除。如果没有队列绑定到该交换，则该交换将永远不会被删除。
-         *  对于队列，自动删除标志表示一旦没有更多的侦听器订阅该队列，该队列将被删除。如果没有订阅处于活动状态，则该队列将永远不会被删除。
-         *  注意：客户端断开连接时，独占队列将始终自动删除。
-         */
         $this->queueName = $queueName;
         $this->queueFlag = $flag;
         return $this;
