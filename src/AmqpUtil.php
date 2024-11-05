@@ -41,6 +41,7 @@ class AmqpUtil
      */
     private ?string $exchangeType = null;
     private ?string $exchangeName = null;
+    private ?string $exchangeFlag = null;
 
     /**
      * @param array|null $credentials
@@ -169,12 +170,14 @@ class AmqpUtil
      * 设置exchange
      * @param string      $exchangeName 交换机名称
      * @param string|null $exchangeType 交换机类型；当前参数仅用于消费者；
+     * @param string|null $flag         交换机flag；当前参数仅用于消费者；
      * @return $this
      */
-    public function setExchange(string $exchangeName, ?string $exchangeType = null): static
+    public function setExchange(string $exchangeName, ?string $exchangeType = null, ?string $flag = \AMQP_DURABLE): static
     {
         $this->exchangeName = $exchangeName;
         $this->exchangeType = $exchangeType;
+        $this->exchangeFlag = $flag;
         return $this;
     }
 
@@ -258,6 +261,7 @@ class AmqpUtil
         // 声明交换机
         $this->initExchange();
         $this->exchange->setType($this->exchangeType);
+        $this->exchange->setFlags($this->exchangeFlag);
         $this->exchange->declareExchange();
 
         // 声明队列
