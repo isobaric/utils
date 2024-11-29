@@ -20,7 +20,7 @@ class AmqpUtil
      * @var array
      * @see \AMQPConnection::__construct()
      */
-    protected array $credentials;
+    protected array $credentials = [];
 
     /**
      * 消费者预取数量
@@ -28,6 +28,10 @@ class AmqpUtil
      */
     protected int $prefetchCount = 20;
 
+    /**
+     * 心跳
+     * @var int|mixed
+     */
     protected int $heartbeat = 60;
 
     /**
@@ -89,7 +93,7 @@ class AmqpUtil
 
     /**
      * 初始化参数
-     * @param array|null $credentials
+     * @param array|null $credentials   取值参考当前类的属性
      * @see AMQPConnection::__construct
      */
     public function __construct(null|array $credentials = null)
@@ -97,6 +101,13 @@ class AmqpUtil
         // 如果未初始化 则使用继承者的属性
         if (!is_null($credentials)) {
             $this->credentials = $credentials;
+        }
+
+        // 心跳时间
+        if (array_key_exists('heartbeat', $this->credentials) && $this->credentials['heartbeat'] >= 0) {
+            $this->heartbeat = $this->credentials['heartbeat'];
+        } else {
+            $this->credentials['heartbeat'] = $this->heartbeat;
         }
     }
 
@@ -109,6 +120,15 @@ class AmqpUtil
     {
         $this->prefetchCount = $count;
         return $this;
+    }
+
+    /**
+     * @return void
+     * @throws AMQPConnectionException
+     */
+    public function keepalive(): void
+    {
+        //$queue->getConnection()->connect();
     }
 
     /**
@@ -319,9 +339,6 @@ class AmqpUtil
             throw new AMQPQueueException('Queue must be initialized with function setQueue()');
         }
 
-        // 设置预取消息数量
-        $this->channel->setPrefetchCount($this->prefetchCount);
-
         // 声明交换机
         $this->initExchange();
         $this->exchange->setType($this->exchangeType);
@@ -333,6 +350,9 @@ class AmqpUtil
         $this->queue->setName($this->queueName);
         $this->queue->setFlags($this->queueFlag);
         $this->queue->declareQueue();
+
+        // 设置预取消息数量
+        $this->channel->setPrefetchCount($this->prefetchCount);
 
         // 绑定路由Key到交换机
         $this->queue->bind($this->exchangeName, $routingKey);

@@ -34,35 +34,35 @@ class ProcessUtl
     }
 
     /**
-     * 进程派发
+     * 进程派发，并等待进程执行结束
      *  注意：1 当子进程创建完成后 当前方法会进入等待状态 直至全部子进程执行结束
      *       2 当子进程全部结束后 当前方法返回进程的运行状态结果
-     * @param callable $callback    接收$data的回调方法
-     * @param array    $list        派发给回调方法的数据；数据下标不变；
-     * @param int      $split       派发给单个进程的$data值的数量；
-     *                                  用于将$data分割并传递给回调方法，将会创建 ceil(count($list) / $split) 个并行进程；
-     *                                  如果$split为0，则不分割$data，既仅创建一个进程，并将$data派发到回调方法；
+     * @param callable                    $callback 接收$data的回调方法
+     * @param float|bool|int|string|array $data 派发给回调方法的数据；数据下标不变；
+     * @param int                         $split 派发给单个进程的$data值的数量；仅$data为数组时有效
+     *                                      用于将$data分割并传递给回调方法，将会创建 ceil(count($data) / $split) 个并行进程；
+     *                                      如果$split为0，则不分割$data，既仅创建一个进程，并将$data派发到回调方法；
      * @return array    全部子进程退出后，返回进程的的执行结果
      */
-    public function dispatchSync(callable $callback, array $list = [], int $split = 1): array
+    public function dispatchSync(callable $callback, float|bool|int|string|array $data = [], int $split = 1): array
     {
-        $dispatch = self::privateDispatch($callback, $list, $split);
+        $dispatch = self::privateDispatch($callback, $data, $split);
 
         return self::dispatchWait(...$dispatch);
     }
 
     /**
-     * 进程派发
+     * 进程派发，派发结束后返回，不等待进程执行结束
      *  注意：1 当进程创建完成后，立即返回创建成功的子进程ID列表 和 创建失败的进程数量
      *       2 应该在调用当前方法之后 脚本结束之前，调用当前类中的 dispatchWait() 方法，以确保不会产生僵尸进程
-     * @param callable $callback    接收$data的回调方法，
-     * @param array    $data        派发给回调方法的数据；数据下标不变；
-     * @param int      $split       派发给单个进程的$data值的数量；
-     *                                  用于将$data分割并传递给回调方法，将会创建 ceil(count($data) / $split) 个并行进程；
-     *                                  如果$split为0，则不分割$data，既仅创建一个进程，并将$data派发到回调方法；
+     * @param callable                    $callback 接收$data的回调方法，
+     * @param float|bool|int|string|array $data 派发给回调方法的数据；数据下标不变；
+     * @param int                         $split 派发给单个进程的$data值的数量；仅$data为数组时有效
+     *                                      用于将$data分割并传递给回调方法，将会创建 ceil(count($data) / $split) 个并行进程；
+     *                                      如果$split为0，则不分割$data，既仅创建一个进程，并将$data派发到回调方法；
      * @return array    返回创建成功的子进程ID列表 和 创建失败的进程数量
      */
-    public static function dispatchAsync(callable $callback, array $data = [], int $split = 0): array
+    public static function dispatchAsync(callable $callback, float|bool|int|string|array $data = [], int $split = 0): array
     {
         return self::privateDispatch($callback, $data, $split);
     }
