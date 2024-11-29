@@ -44,7 +44,7 @@ class ProcessUtl
      *                                      如果$split为0，则不分割$data，既仅创建一个进程，并将$data派发到回调方法；
      * @return array    全部子进程退出后，返回进程的的执行结果
      */
-    public function dispatchSync(callable $callback, float|bool|int|string|array $data = [], int $split = 1): array
+    public static function dispatchSync(callable $callback, float|bool|int|string|array $data = [], int $split = 1): array
     {
         $dispatch = self::privateDispatch($callback, $data, $split);
 
@@ -62,7 +62,7 @@ class ProcessUtl
      *                                      如果$split为0，则不分割$data，既仅创建一个进程，并将$data派发到回调方法；
      * @return array    返回创建成功的子进程ID列表 和 创建失败的进程数量
      */
-    public static function dispatchAsync(callable $callback, float|bool|int|string|array $data = [], int $split = 0): array
+    public static function dispatchAsync(callable $callback, float|bool|int|string|array $data = [], int $split = 1): array
     {
         return self::privateDispatch($callback, $data, $split);
     }
