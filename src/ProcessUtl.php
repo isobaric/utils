@@ -37,6 +37,7 @@ class ProcessUtl
      * 进程派发，并等待进程执行结束
      *  注意：1 当子进程创建完成后 当前方法会进入等待状态 直至全部子进程执行结束
      *       2 当子进程全部结束后 当前方法返回进程的运行状态结果
+     *       3 如果多个子进程使用了主进程的连接资源或句柄，将会产生异常，使用当前方法之前，需主动断开资源链接或句柄。
      * @param callable                    $callback 接收$data的回调方法
      * @param float|bool|int|string|array $data 派发给回调方法的数据；数据下标不变；
      * @param int                         $split 派发给单个进程的$data值的数量；仅$data为数组时有效
@@ -55,6 +56,7 @@ class ProcessUtl
      * 进程派发，派发结束后返回，不等待进程执行结束
      *  注意：1 当进程创建完成后，立即返回创建成功的子进程ID列表 和 创建失败的进程数量
      *       2 应该在调用当前方法之后 脚本结束之前，调用当前类中的 dispatchWait() 方法，以确保不会产生僵尸进程
+     *       3 如果多个子进程使用了主进程的连接资源或句柄，将会产生异常，使用当前方法之前，需主动断开资源链接或句柄。
      * @param callable                    $callback 接收$data的回调方法，
      * @param float|bool|int|string|array $data 派发给回调方法的数据；数据下标不变；
      * @param int                         $split 派发给单个进程的$data值的数量；仅$data为数组时有效
