@@ -160,4 +160,32 @@ class StringUtil
             return false;
         }
     }
+
+    /**
+     * 移除字符串最后面的字符
+     * @param string $string
+     * @param string $tail
+     * @return string
+     */
+    public static function trimTail(string $string, string $tail = "\t"): string
+    {
+        if (str_ends_with($string, $tail)) {
+            return substr($string, 0, mb_strrpos($string, $tail));
+        }
+        return $string;
+    }
+
+    /**
+     * 移除字符串最后面的字符 并返回字符串是否存在
+     * @param string $string
+     * @param string $tail
+     * @return array
+     */
+    public static function trimExistTail(string $string, string $tail): array
+    {
+        if (str_ends_with($string, $tail)) {
+            return [true, substr($string, 0, mb_strrpos($string, $tail))];
+        }
+        return [false, $string];
+    }
 }
