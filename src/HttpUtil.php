@@ -72,56 +72,39 @@ class HttpUtil
         try {
             return self::$httpUtil->$name(...$arguments);
         } catch (Throwable $t) {
-            // 异常信息记录到log
-            $args = '';
-            foreach ($arguments as $argument) {
-                if (is_array($argument)) {
-                    $args .= json_encode($argument, JSON_UNESCAPED_UNICODE) . ' ';
-                } else {
-                    $args .= $argument . ' ';
-                }
-            }
+            // 异常信息记录
+            self::$httpUtil->log($name, $arguments, $t);
 
-            $msg = '第三方接口异常 方法 ' . $name
-                . ' 参数 ' . $args
-                . ' 异常 ' . $t->getMessage() . ' ' . $t->getFile() . '(' . $t->getLine() . ')' . $t->getCode();
-
-            // TODO 记录Log Log记录方法应该可以被重写
             throw $t;
         }
     }
 
     /**
-     * 返回值处理
-     * @param array $response
-     * @return mixed
+     * 异常信息记录
+     * @param string         $function
+     * @param array          $arguments
+     * @param Throwable|null $throwable
+     * @return void
      */
-    public static function successJsonDataDecode(array $response): mixed
+    public function log(string $function, array $arguments, ?Throwable $throwable = null): void
     {
-        // TODO 配置默认message 默认$successCode 默认异常code
-
-        (int)$code = $response['code'] ?? 0;
-        (string)$message = $response['msg'] ?? $response['message'] ?? '';
-        $successCode = [];
-        if (in_array($code, $successCode)) {
-            return $response['data'] ?? [];
+        // 异常信息记录到log
+        $argsStr = '';
+        foreach ($arguments as $argument) {
+            if (is_array($argument)) {
+                $argsStr .= json_encode($argument, JSON_UNESCAPED_UNICODE) . ' ';
+            } else {
+                $argsStr .= $argument . ' ';
+            }
         }
-        throw new RuntimeException($message, $code);
-    }
 
-    /**
-     * 批量请求结果处理
-     * @param array $response
-     * @return array
-     */
-    public static function successBatchResponseDecode(array $response): array
-    {
-        $result = [];
-        foreach ($response as $item) {
-            $result[] = self::successJsonDataDecode($item);
-        }
-        unset($response);
-        return array_filter($result);
+        $msg = '第三方接口异常 方法 ' . $function
+            . ' 参数 ' . $argsStr
+            . ' 异常 ' . $throwable->getMessage() . ' '
+            . $throwable->getFile() . '(' . $throwable->getLine() . ')'
+            . $throwable->getCode();
+
+        echo $msg . PHP_EOL;
     }
 
     /**
@@ -159,7 +142,8 @@ class HttpUtil
             return $response->getBody();
         }
 
-        // TODO LOG
+        // 异常信息记录
+        $this->log(__METHOD__, func_get_args());
 
         throw new RuntimeException($response->getBody());
     }
@@ -195,7 +179,9 @@ class HttpUtil
         $json = $this->requestAndResponseJson($method, $url, $timeout, $headers, $options);
 
         if (!is_array($json)) {
-            // TODO LOG
+            // 异常信息记录
+            $this->log(__METHOD__, func_get_args());
+
             throw new RuntimeException('Unsupported Response Body');
         }
 
@@ -210,7 +196,9 @@ class HttpUtil
             return $response[$this->successDataIndex] ?? [];
         }
 
-        // TODO LOG
+        // 异常信息记录
+        $this->log(__METHOD__, func_get_args());
+
         throw new RuntimeException($message, $code);
     }
 
@@ -446,8 +434,6 @@ class HttpUtil
         return $this->requestAndResponseJson('DELETE', $url, $timeout, $headers, ['form_params' => $data]);
     }
 
-    // TODO
-
     /**
      * 发送JSON请求，并JSON解析后返回值指定的值
      * @param string   $url
@@ -476,4 +462,59 @@ class HttpUtil
         return $this->requestAndResponseSuccess('POST', $url, $timeout, $headers, ['json' => $data]);
     }
 
+    /**
+     * 发送JSON请求，并JSON解析后返回值指定的值
+     * @param string   $url
+     * @param array    $data
+     * @param int|null $timeout
+     * @param array    $headers
+     * @return mixed
+     * @throws GuzzleException
+     */
+    public function putJsonSuccess(string $url, array $data = [], null|int $timeout = null, array $headers = []): mixed
+    {
+        return $this->requestAndResponseSuccess('PUT', $url, $timeout, $headers, ['json' => $data]);
+    }
+
+    /**
+     * 发送JSON请求，并JSON解析后返回值指定的值
+     * @param string   $url
+     * @param array    $data
+     * @param int|null $timeout
+     * @param array    $headers
+     * @return mixed
+     * @throws GuzzleException
+     */
+    public function headJsonSuccess(string $url, array $data = [], null|int $timeout = null, array $headers = []): mixed
+    {
+        return $this->requestAndResponseSuccess('HEAD', $url, $timeout, $headers, ['json' => $data]);
+    }
+
+    /**
+     * 发送JSON请求，并JSON解析后返回值指定的值
+     * @param string   $url
+     * @param array    $data
+     * @param int|null $timeout
+     * @param array    $headers
+     * @return mixed
+     * @throws GuzzleException
+     */
+    public function patchJsonSuccess(string $url, array $data = [], null|int $timeout = null, array $headers = []): mixed
+    {
+        return $this->requestAndResponseSuccess('PATCH', $url, $timeout, $headers, ['json' => $data]);
+    }
+
+    /**
+     * 发送JSON请求，并JSON解析后返回值指定的值
+     * @param string   $url
+     * @param array    $data
+     * @param int|null $timeout
+     * @param array    $headers
+     * @return mixed
+     * @throws GuzzleException
+     */
+    public function deleteJsonSuccess(string $url, array $data = [], null|int $timeout = null, array $headers = []): mixed
+    {
+        return $this->requestAndResponseSuccess('DELETE', $url, $timeout, $headers, ['json' => $data]);
+    }
 }
