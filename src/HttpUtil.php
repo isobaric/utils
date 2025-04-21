@@ -92,30 +92,37 @@ class HttpUtil
      */
     public static function log(array $arguments, ?Throwable $throwable = null, mixed $response = null): void
     {
+        $logStr = 'HttpUtil Error Log';
+
         // 异常信息记录到log
-        $argsStr = '';
-        foreach ($arguments as $argument) {
-            if (is_array($argument)) {
-                $argsStr .= json_encode($argument, JSON_UNESCAPED_UNICODE) . ' ';
-            } else {
-                $argsStr .= $argument . ' ';
+        if (!empty($arguments)) {
+            foreach ($arguments as $argument) {
+                if (is_array($argument)) {
+                    $logStr .= json_encode($argument, JSON_UNESCAPED_UNICODE) . ' ';
+                } else {
+                    $logStr .= $argument . ' ';
+                }
             }
+            $logStr .= ';';
         }
 
-        $exceptionStr = '';
+
         if (!is_null($throwable)) {
-            $exceptionStr = $throwable->getMessage()
-                . $throwable->getFile() . '(' . $throwable->getLine() . ')'
-                . $throwable->getCode();
+            $logStr .= ' Throwable: ' .
+                $throwable->getMessage()
+                . $throwable->getFile()
+                . '(' . $throwable->getLine() . ')'
+                . $throwable->getCode()
+                . ';';
         }
 
+        $logStr .= ' Response: ';
         if (is_array($response)) {
             $response = json_encode($response);
         }
+        $logStr .= $response;
 
-        $msg = 'HttpUtil Error Log: ' . $argsStr . '; Throwable: ' . $exceptionStr . '; Response: ' . $response;
-
-        echo $msg . PHP_EOL;
+        echo $logStr . PHP_EOL;
     }
 
     /**
