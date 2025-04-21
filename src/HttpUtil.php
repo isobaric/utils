@@ -87,9 +87,10 @@ class HttpUtil
      * 异常信息记录
      * @param array          $arguments
      * @param Throwable|null $throwable
+     * @param mixed         $response
      * @return void
      */
-    public static function log(array $arguments, ?Throwable $throwable = null): void
+    public static function log(array $arguments, ?Throwable $throwable = null, mixed $response = null): void
     {
         // 异常信息记录到log
         $argsStr = '';
@@ -101,9 +102,14 @@ class HttpUtil
             }
         }
 
-        $msg = '接口异常 ' . $argsStr . ' ' . $throwable->getMessage()
-            . $throwable->getFile() . '(' . $throwable->getLine() . ')'
-            . $throwable->getCode();
+        $exceptionStr = '';
+        if (!is_null($throwable)) {
+            $exceptionStr = $throwable->getMessage()
+                . $throwable->getFile() . '(' . $throwable->getLine() . ')'
+                . $throwable->getCode();
+        }
+
+        $msg = 'HttpUtil Error Log: ' . $argsStr . '; Throwable: ' . $exceptionStr . '; Response: ' . $response;
 
         echo $msg . PHP_EOL;
     }
@@ -199,7 +205,7 @@ class HttpUtil
     {
         if (!is_array($jsonResponse)) {
             // 异常信息记录
-            self::log($arguments);
+            self::log($arguments, null, $jsonResponse);
 
             throw new RuntimeException('Unsupported Response Body');
         }
@@ -216,7 +222,7 @@ class HttpUtil
         }
 
         // 异常信息记录
-        self::log($arguments);
+        self::log($arguments, null, $jsonResponse);
 
         throw new RuntimeException($message, $code);
     }
