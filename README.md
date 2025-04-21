@@ -14,3 +14,7 @@
 6. 增加Elasticsearch操作工具：ElasticsearchUtil
 7. 增加单元测试模块：phpunit/phpunit
 8. CurlUtil 默认设置 CURLOPT_RETURNTRANSFER = true 将curl_exec()获取的信息以字符串返回，而不是直接输出
+
+## v0.2.0
+- 新增HttpUtil
+- 新增GitUtil
