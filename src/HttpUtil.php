@@ -7,32 +7,10 @@ use GuzzleHttp\Exception\GuzzleException;
 use RuntimeException;
 use Throwable;
 
-/**
- * @see self::getJson()
- * @method static getJson(string $url, int $timeout = 5, array $headers = [])
- * @method static getJsonSuccess(string $url, int $timeout = 5, array $headers = [])
- *
- * @see self::postJson()
- * @method static postJson(string $url, array $data = [], int $timeout = 5, array $headers = [])
- * @method static postJsonSuccess(string $url, array $data = [], int $timeout = 5, array $headers = [])
- *
- * @see self::putJson()
- * @method static putJson(string $url, array $data = [], int $timeout = 5, array $headers = [])
- * @method static putJsonSuccess(string $url, array $data = [], int $timeout = 5, array $headers = [])
- *
- *
- * @method static getJsonBatch(array $request = [], int $timeout = 5, array $headers = [])
- *
- * @method static postJsonBatch(array $request = [], int $timeout = 5, array $headers = [])
- * @method static postJsonBatchSuccess(array $request = [], int $timeout = 5, array $headers = [])
- *
- * @method static postFormJson(array $request = [], int $timeout = 5, array $headers = [])
- * @method static postFormJsonBatchSuccess(array $request = [], int $timeout = 5, array $headers = [])
- */
 class HttpUtil
 {
     // 请求超时时长 单位：秒
-    public int $timeout = 60;
+    public static int $timeout = 60;
 
     // success方法，返回表示code码的字段名
     public string $successCodeIndex = 'code';
@@ -81,12 +59,11 @@ class HttpUtil
 
     /**
      * 异常信息记录
-     * @param string         $function
      * @param array          $arguments
      * @param Throwable|null $throwable
      * @return void
      */
-    public function log(string $function, array $arguments, ?Throwable $throwable = null): void
+    public static function log(array $arguments, ?Throwable $throwable = null): void
     {
         // 异常信息记录到log
         $argsStr = '';
@@ -98,9 +75,7 @@ class HttpUtil
             }
         }
 
-        $msg = '第三方接口异常 方法 ' . $function
-            . ' 参数 ' . $argsStr
-            . ' 异常 ' . $throwable->getMessage() . ' '
+        $msg = '接口异常 ' . $argsStr . ' ' . $throwable->getMessage()
             . $throwable->getFile() . '(' . $throwable->getLine() . ')'
             . $throwable->getCode();
 
@@ -121,31 +96,39 @@ class HttpUtil
      *
      * @param array    $options
      * @return string
-     * @throws GuzzleException
+     * @throws GuzzleException|Throwable
      */
-    private function requestBody(string $method, string $url, null|int $timeout, array $headers, array $options = []): string
+    private static function requestBody(string $method, string $url, null|int $timeout, array $headers, array $options = []): string
     {
-        if (is_null($timeout)) {
-            $options['timeout'] = $this->timeout;
-        } else {
-            $options['timeout'] = $timeout;
-        }
+        try {
+            if (is_null($timeout)) {
+                $options['timeout'] = self::$timeout;
+            } else {
+                $options['timeout'] = $timeout;
+            }
 
-        if (!empty($headers)) {
-            $options['headers'] = $headers;
-        }
+            if (!empty($headers)) {
+                $options['headers'] = $headers;
+            }
 
-        $client = new Client();
-        $response = $client->request($method, $url, $options);
+            // disable throwing exceptions on an HTTP protocol errors
+            $options['http_errors'] = false;
 
-        if ($response->getStatusCode() >= 200 && $response->getStatusCode() < 300) {
+            $client = new Client();
+            $response = $client->request($method, $url, $options);
+
+            //if ($response->getStatusCode() >= 200 && $response->getStatusCode() < 300) {
+            //    return $response->getBody();
+            //}
+
             return $response->getBody();
+
+        } catch (Throwable $throwable) {
+            // 异常信息记录
+            self::log(func_get_args(), $throwable);
+
+            throw $throwable;
         }
-
-        // 异常信息记录
-        $this->log(__METHOD__, func_get_args());
-
-        throw new RuntimeException($response->getBody());
     }
 
     /**
@@ -156,7 +139,7 @@ class HttpUtil
      * @param array  $headers
      * @param array  $options
      * @return mixed
-     * @throws GuzzleException
+     * @throws GuzzleException|Throwable
      */
     private function requestAndResponseJson(string $method, string $url, int $timeout, array $headers, array $options): mixed
     {
@@ -172,7 +155,7 @@ class HttpUtil
      * @param array  $headers
      * @param array  $options
      * @return mixed
-     * @throws GuzzleException
+     * @throws GuzzleException|Throwable
      */
     private function requestAndResponseSuccess(string $method, string $url, int $timeout, array $headers, array $options): mixed
     {
@@ -180,7 +163,7 @@ class HttpUtil
 
         if (!is_array($json)) {
             // 异常信息记录
-            $this->log(__METHOD__, func_get_args());
+            $this->log(func_get_args());
 
             throw new RuntimeException('Unsupported Response Body');
         }
@@ -197,21 +180,21 @@ class HttpUtil
         }
 
         // 异常信息记录
-        $this->log(__METHOD__, func_get_args());
+        $this->log(func_get_args());
 
         throw new RuntimeException($message, $code);
     }
 
-    /**
+    /** TODO
      * @param string   $url
      * @param int|null $timeout
      * @param array    $headers
      * @return string
-     * @throws GuzzleException
+     * @throws GuzzleException|Throwable
      */
-    public function get(string $url, null|int $timeout = null, array $headers = []): string
+    public static function get(string $url, null|int $timeout = null, array $headers = []): string
     {
-        return $this->requestBody('GET', $url, $timeout, $headers);
+        return self::requestBody('GET', $url, $timeout, $headers);
     }
 
     /**
