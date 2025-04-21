@@ -168,18 +168,22 @@ class HttpUtil
     }
 
     /**
+     * 发送请求，并返回结果
      * @param string   $url
+     * @param array    $data
      * @param int|null $timeout
      * @param array    $headers
      * @return string
-     * @throws GuzzleException|Throwable
+     * @throws GuzzleException
+     * @throws Throwable
      */
-    public static function get(string $url, null|int $timeout = null, array $headers = []): string
+    public static function get(string $url, array $data = [], null|int $timeout = null, array $headers = []): string
     {
-        return self::requestBody('GET', $url, $timeout, $headers);
+        return self::requestBody('GET', $url, $timeout, $headers, ['query' => $data]);
     }
 
     /**
+     * 发送请求，并返回结果
      * @param string   $url
      * @param array    $data
      * @param int|null $timeout
@@ -194,6 +198,7 @@ class HttpUtil
     }
 
     /**
+     * 发送请求，并返回结果
      * @param string   $url
      * @param array    $data
      * @param int|null $timeout
@@ -207,6 +212,7 @@ class HttpUtil
     }
 
     /**
+     * 发送请求，并返回结果
      * @param string   $url
      * @param array    $data
      * @param int|null $timeout
@@ -220,6 +226,7 @@ class HttpUtil
     }
 
     /**
+     * 发送请求，并返回结果
      * @param string   $url
      * @param array    $data
      * @param int|null $timeout
@@ -234,6 +241,7 @@ class HttpUtil
     }
 
     /**
+     * 发送请求，并返回结果
      * @param string   $url
      * @param array    $data
      * @param int|null $timeout
