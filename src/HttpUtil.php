@@ -109,6 +109,10 @@ class HttpUtil
                 . $throwable->getCode();
         }
 
+        if (is_array($response)) {
+            $response = json_encode($response);
+        }
+
         $msg = 'HttpUtil Error Log: ' . $argsStr . '; Throwable: ' . $exceptionStr . '; Response: ' . $response;
 
         echo $msg . PHP_EOL;
