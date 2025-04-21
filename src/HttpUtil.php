@@ -256,6 +256,94 @@ class HttpUtil
     }
 
     /**
+     * 发送Form请求，并返回结果
+     * @param string   $url
+     * @param array    $data
+     * @param int|null $timeout
+     * @param array    $headers
+     * @return string
+     * @throws GuzzleException
+     * @throws Throwable
+     */
+    public static function getForm(string $url, array $data = [], null|int $timeout = null, array $headers = []): string
+    {
+        return self::requestBody('GET', $url, $timeout, $headers, ['form_params' => $data]);
+    }
+
+    /**
+     * 发送Form请求，并返回结果
+     * @param string   $url
+     * @param array    $data
+     * @param int|null $timeout
+     * @param array    $headers
+     * @return string
+     * @throws GuzzleException
+     * @throws Throwable
+     */
+    public static function postForm(string $url, array $data = [], null|int $timeout = null, array $headers = []): string
+    {
+        return self::requestBody('POST', $url, $timeout, $headers, ['form_params' => $data]);
+    }
+
+    /**
+     * 发送Form请求，并返回结果
+     * @param string   $url
+     * @param array    $data
+     * @param int|null $timeout
+     * @param array    $headers
+     * @return string
+     * @throws GuzzleException|Throwable
+     */
+    public static function putForm(string $url, array $data = [], null|int $timeout = null, array $headers = []): string
+    {
+        return self::requestBody('PUT', $url, $timeout, $headers, ['form_params' => $data]);
+    }
+
+    /**
+     * 发送Form请求，并返回结果
+     * @param string   $url
+     * @param array    $data
+     * @param int|null $timeout
+     * @param array    $headers
+     * @return string
+     * @throws GuzzleException|Throwable
+     */
+    public static function headForm(string $url, array $data = [], null|int $timeout = null, array $headers = []): string
+    {
+        return self::requestBody('HEAD', $url, $timeout, $headers, ['form_params' => $data]);
+    }
+
+    /**
+     * 发送Form请求，并返回结果
+     * @param string   $url
+     * @param array    $data
+     * @param int|null $timeout
+     * @param array    $headers
+     * @return string
+     * @throws GuzzleException
+     * @throws Throwable
+     */
+    public static function patchForm(string $url, array $data = [], null|int $timeout = null, array $headers = []): string
+    {
+        return self::requestBody('PATCH', $url, $timeout, $headers, ['form_params' => $data]);
+    }
+
+    /**
+     * 发送Form请求，并返回结果
+     * @param string   $url
+     * @param array    $data
+     * @param int|null $timeout
+     * @param array    $headers
+     * @return string
+     * @throws GuzzleException
+     * @throws Throwable
+     */
+    public static function deleteForm(string $url, array $data = [], null|int $timeout = null, array $headers = []): string
+    {
+        return self::requestBody('DELETE', $url, $timeout, $headers, ['form_params' => $data]);
+    }
+
+    /**
      * 发送JSON请求，并JSON解析返回值
      * @param string   $url
      * @param array    $data
