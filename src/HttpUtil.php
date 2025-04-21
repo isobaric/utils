@@ -92,35 +92,37 @@ class HttpUtil
      */
     public static function log(array $arguments, ?Throwable $throwable = null, mixed $response = null): void
     {
-        $logStr = 'HttpUtil Error Log';
+        $logStr = 'HttpUtil Error Log: ';
 
         // 异常信息记录到log
         if (!empty($arguments)) {
-            foreach ($arguments as $argument) {
+            foreach ($arguments as $argumentName => $argument) {
+                $logStr .= $argumentName . ': ';
                 if (is_array($argument)) {
-                    $logStr .= json_encode($argument, JSON_UNESCAPED_UNICODE) . ' ';
+                    $logStr .= json_encode($argument, JSON_UNESCAPED_UNICODE) . '; ';
                 } else {
-                    $logStr .= $argument . ' ';
+                    $logStr .= $argument . '; ';
                 }
             }
-            $logStr .= ';';
         }
 
 
         if (!is_null($throwable)) {
-            $logStr .= ' Throwable: ' .
+            $logStr .= 'Throwable: ' .
                 $throwable->getMessage()
                 . $throwable->getFile()
                 . '(' . $throwable->getLine() . ')'
                 . $throwable->getCode()
-                . ';';
+                . '; ';
         }
 
-        $logStr .= ' Response: ';
+        $logStr .= 'Response: ';
         if (is_array($response)) {
-            $response = json_encode($response);
+            $logStr .= json_encode($response, JSON_UNESCAPED_UNICODE);
+        } else {
+            $logStr .= $response;
         }
-        $logStr .= $response;
+        $logStr .= ';';
 
         echo $logStr . PHP_EOL;
     }
@@ -143,6 +145,7 @@ class HttpUtil
      */
     private static function requestBody(string $method, string $url, null|int $timeout, array $headers, array $options = []): string
     {
+        $arguments = get_defined_vars();
         try {
             if (!is_null($timeout)) {
                 $options['timeout'] = $timeout;
@@ -166,7 +169,7 @@ class HttpUtil
 
         } catch (Throwable $throwable) {
             // 异常信息记录
-            self::log(func_get_args(), $throwable);
+            self::log($arguments, $throwable);
 
             throw $throwable;
         }
@@ -202,17 +205,18 @@ class HttpUtil
      */
     private static function requestSuccess(string $method, string $url, null|int $timeout, array $headers, array $options): mixed
     {
-        $json = self::requestJson($method, $url, $timeout, $headers, $options);
+        $arguments = get_defined_vars();
+        $jsonResponse = self::requestJson($method, $url, $timeout, $headers, $options);
 
-        return self::successDecode($json, func_get_args());
+        return self::successDecode($arguments, $jsonResponse);
     }
 
     /**
-     * @param mixed $jsonResponse
      * @param array $arguments
+     * @param mixed $jsonResponse
      * @return mixed
      */
-    private static function successDecode(mixed $jsonResponse, array $arguments): mixed
+    private static function successDecode(array $arguments, mixed $jsonResponse): mixed
     {
         if (!is_array($jsonResponse)) {
             // 异常信息记录
