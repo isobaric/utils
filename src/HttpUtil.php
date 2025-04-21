@@ -9,53 +9,25 @@ use Throwable;
 
 class HttpUtil
 {
-    // 请求超时时长 单位：秒
-    public static int $timeout = 60;
-
     // success方法，返回表示code码的字段名
-    public string $successCodeIndex = 'code';
+    public static string $successCodeIndex = 'code';
 
     // success方法，返回表示数据字段的字段名
-    public string $successDataIndex = 'data';
+    public static string $successDataIndex = 'data';
 
     // success方法，返回表示提示消息的字段名
-    public string $successMessageIndex = 'message';
+    public static string $successMessageIndex = 'message';
 
     // success方法，返回值中没有表示code码的字段时，默认的赋值
-    public int $defaultResponseCode = 0;
+    public static int $defaultResponseCode = 200;
 
     // success方法，返回值中没有表示提示消息的字段时，默认的赋值
-    public string $defaultResponseMessage = '';
+    public static string $defaultResponseMessage = '';
 
-    public array $defaultSuccessCode = [
+    // success方法，默认的成功码
+    public static array $defaultSuccessCode = [
         200
     ];
-
-    // 当前类对象
-    private static null|HttpUtil $httpUtil = null;
-
-    /**
-     * 以静态的形式访问方法
-     * @param string $name
-     * @param array  $arguments
-     * @return mixed
-     * @throws Throwable
-     */
-    public static function __callStatic(string $name, array $arguments)
-    {
-        if (is_null(self::$httpUtil)) {
-            self::$httpUtil = new self;
-        }
-
-        try {
-            return self::$httpUtil->$name(...$arguments);
-        } catch (Throwable $t) {
-            // 异常信息记录
-            self::$httpUtil->log($name, $arguments, $t);
-
-            throw $t;
-        }
-    }
 
     /**
      * 异常信息记录
@@ -101,9 +73,7 @@ class HttpUtil
     private static function requestBody(string $method, string $url, null|int $timeout, array $headers, array $options = []): string
     {
         try {
-            if (is_null($timeout)) {
-                $options['timeout'] = self::$timeout;
-            } else {
+            if (!is_null($timeout)) {
                 $options['timeout'] = $timeout;
             }
 
@@ -133,59 +103,71 @@ class HttpUtil
 
     /**
      * 请求并json解析返回值
-     * @param string $method
-     * @param string $url
-     * @param int    $timeout
-     * @param array  $headers
-     * @param array  $options
+     * @param string   $method
+     * @param string   $url
+     * @param int|null $timeout
+     * @param array    $headers
+     * @param array    $options
      * @return mixed
-     * @throws GuzzleException|Throwable
+     * @throws GuzzleException
+     * @throws Throwable
      */
-    private function requestAndResponseJson(string $method, string $url, int $timeout, array $headers, array $options): mixed
+    private static function requestJson(string $method, string $url, null|int $timeout, array $headers, array $options): mixed
     {
-        $body = $this->requestBody($method, $url, $timeout, $headers, $options);
+        $body = self::requestBody($method, $url, $timeout, $headers, $options);
         return json_decode($body, true);
     }
 
     /**
-     * 请求并json解析返回值
-     * @param string $method
-     * @param string $url
-     * @param int    $timeout
-     * @param array  $headers
-     * @param array  $options
+     * 请求并json解析后返回表示成功的值
+     * @param string   $method
+     * @param string   $url
+     * @param int|null $timeout
+     * @param array    $headers
+     * @param array    $options
      * @return mixed
-     * @throws GuzzleException|Throwable
+     * @throws GuzzleException
+     * @throws Throwable
      */
-    private function requestAndResponseSuccess(string $method, string $url, int $timeout, array $headers, array $options): mixed
+    private static function requestSuccess(string $method, string $url, null|int $timeout, array $headers, array $options): mixed
     {
-        $json = $this->requestAndResponseJson($method, $url, $timeout, $headers, $options);
+        $json = self::requestJson($method, $url, $timeout, $headers, $options);
 
-        if (!is_array($json)) {
+        return self::successDecode($json, func_get_args());
+    }
+
+    /**
+     * @param mixed $jsonResponse
+     * @param array $arguments
+     * @return mixed
+     */
+    private static function successDecode(mixed $jsonResponse, array $arguments): mixed
+    {
+        if (!is_array($jsonResponse)) {
             // 异常信息记录
-            $this->log(func_get_args());
+            self::log($arguments);
 
             throw new RuntimeException('Unsupported Response Body');
         }
 
         // code码
-        (int)$code = $response[$this->successCodeIndex] ?? $this->defaultResponseCode;
+        (int)$code = $response[self::$successCodeIndex] ?? self::$defaultResponseCode;
 
         // 提示消息
-        (string)$message = $response[$this->successMessageIndex] ?? $this->defaultResponseMessage;
+        (string)$message = $response[self::$successMessageIndex] ?? self::$defaultResponseMessage;
 
         // 成功时 返回指定的消息
-        if (in_array($code, $this->defaultSuccessCode)) {
-            return $response[$this->successDataIndex] ?? [];
+        if (in_array($code, self::$defaultSuccessCode)) {
+            return $response[self::$successDataIndex] ?? [];
         }
 
         // 异常信息记录
-        $this->log(func_get_args());
+        self::log($arguments);
 
         throw new RuntimeException($message, $code);
     }
 
-    /** TODO
+    /**
      * @param string   $url
      * @param int|null $timeout
      * @param array    $headers
@@ -204,10 +186,37 @@ class HttpUtil
      * @param array    $headers
      * @return string
      * @throws GuzzleException
+     * @throws Throwable
      */
-    public function post(string $url, array $data = [], null|int $timeout = null, array $headers = []): string
+    public static function post(string $url, array $data = [], null|int $timeout = null, array $headers = []): string
     {
-        return $this->requestBody('POST', $url, $timeout, $headers, ['query' => $data]);
+        return self::requestBody('POST', $url, $timeout, $headers, ['query' => $data]);
+    }
+
+    /**
+     * @param string   $url
+     * @param array    $data
+     * @param int|null $timeout
+     * @param array    $headers
+     * @return string
+     * @throws GuzzleException|Throwable
+     */
+    public static function put(string $url, array $data = [], null|int $timeout = null, array $headers = []): string
+    {
+        return self::requestBody('PUT', $url, $timeout, $headers, ['query' => $data]);
+    }
+
+    /**
+     * @param string   $url
+     * @param array    $data
+     * @param int|null $timeout
+     * @param array    $headers
+     * @return string
+     * @throws GuzzleException|Throwable
+     */
+    public static function head(string $url, array $data = [], null|int $timeout = null, array $headers = []): string
+    {
+        return self::requestBody('HEAD', $url, $timeout, $headers, ['query' => $data]);
     }
 
     /**
@@ -217,10 +226,11 @@ class HttpUtil
      * @param array    $headers
      * @return string
      * @throws GuzzleException
+     * @throws Throwable
      */
-    public function put(string $url, array $data = [], null|int $timeout = null, array $headers = []): string
+    public static function patch(string $url, array $data = [], null|int $timeout = null, array $headers = []): string
     {
-        return $this->requestBody('PUT', $url, $timeout, $headers, ['query' => $data]);
+        return self::requestBody('PATCH', $url, $timeout, $headers, ['query' => $data]);
     }
 
     /**
@@ -230,36 +240,11 @@ class HttpUtil
      * @param array    $headers
      * @return string
      * @throws GuzzleException
+     * @throws Throwable
      */
-    public function head(string $url, array $data = [], null|int $timeout = null, array $headers = []): string
+    public static function delete(string $url, array $data = [], null|int $timeout = null, array $headers = []): string
     {
-        return $this->requestBody('HEAD', $url, $timeout, $headers, ['query' => $data]);
-    }
-
-    /**
-     * @param string   $url
-     * @param array    $data
-     * @param int|null $timeout
-     * @param array    $headers
-     * @return string
-     * @throws GuzzleException
-     */
-    public function patch(string $url, array $data = [], null|int $timeout = null, array $headers = []): string
-    {
-        return $this->requestBody('PATCH', $url, $timeout, $headers, ['query' => $data]);
-    }
-
-    /**
-     * @param string   $url
-     * @param array    $data
-     * @param int|null $timeout
-     * @param array    $headers
-     * @return string
-     * @throws GuzzleException
-     */
-    public function delete(string $url, array $data = [], null|int $timeout = null, array $headers = []): string
-    {
-        return $this->requestBody('DELETE', $url, $timeout, $headers, ['query' => $data]);
+        return self::requestBody('DELETE', $url, $timeout, $headers, ['query' => $data]);
     }
 
     /**
@@ -269,11 +254,11 @@ class HttpUtil
      * @param int|null $timeout
      * @param array    $headers
      * @return mixed
-     * @throws GuzzleException
+     * @throws GuzzleException|Throwable
      */
-    public function getJson(string $url, array $data = [], null|int $timeout = null, array $headers = []): mixed
+    public static function getJson(string $url, array $data = [], null|int $timeout = null, array $headers = []): mixed
     {
-        return $this->requestAndResponseJson('GET', $url, $timeout, $headers, ['json' => $data]);
+        return self::requestJson('GET', $url, $timeout, $headers, ['json' => $data]);
     }
 
     /**
@@ -283,11 +268,11 @@ class HttpUtil
      * @param int|null $timeout
      * @param array    $headers
      * @return mixed
-     * @throws GuzzleException
+     * @throws GuzzleException|Throwable
      */
-    public function postJson(string $url, array $data = [], null|int $timeout = null, array $headers = []): mixed
+    public static function postJson(string $url, array $data = [], null|int $timeout = null, array $headers = []): mixed
     {
-        return $this->requestAndResponseJson('POST', $url, $timeout, $headers, ['json' => $data]);
+        return self::requestJson('POST', $url, $timeout, $headers, ['json' => $data]);
     }
 
     /**
@@ -297,11 +282,11 @@ class HttpUtil
      * @param int|null $timeout
      * @param array    $headers
      * @return mixed
-     * @throws GuzzleException
+     * @throws GuzzleException|Throwable
      */
-    public function putJson(string $url, array $data = [], null|int $timeout = null, array $headers = []): mixed
+    public static function putJson(string $url, array $data = [], null|int $timeout = null, array $headers = []): mixed
     {
-        return $this->requestAndResponseJson('PUT', $url, $timeout, $headers, ['json' => $data]);
+        return self::requestJson('PUT', $url, $timeout, $headers, ['json' => $data]);
     }
 
 
@@ -312,11 +297,11 @@ class HttpUtil
      * @param int|null $timeout
      * @param array    $headers
      * @return mixed
-     * @throws GuzzleException
+     * @throws GuzzleException|Throwable
      */
-    public function headJson(string $url, array $data = [], null|int $timeout = null, array $headers = []): mixed
+    public static function headJson(string $url, array $data = [], null|int $timeout = null, array $headers = []): mixed
     {
-        return $this->requestAndResponseJson('HEAD', $url, $timeout, $headers, ['json' => $data]);
+        return self::requestJson('HEAD', $url, $timeout, $headers, ['json' => $data]);
     }
 
     /**
@@ -326,11 +311,11 @@ class HttpUtil
      * @param int|null $timeout
      * @param array    $headers
      * @return mixed
-     * @throws GuzzleException
+     * @throws GuzzleException|Throwable
      */
-    public function deleteJson(string $url, array $data = [], null|int $timeout = null, array $headers = []): mixed
+    public static function deleteJson(string $url, array $data = [], null|int $timeout = null, array $headers = []): mixed
     {
-        return $this->requestAndResponseJson('DELETE', $url, $timeout, $headers, ['json' => $data]);
+        return self::requestJson('DELETE', $url, $timeout, $headers, ['json' => $data]);
     }
 
     /**
@@ -340,11 +325,11 @@ class HttpUtil
      * @param int|null $timeout
      * @param array    $headers
      * @return mixed
-     * @throws GuzzleException
+     * @throws GuzzleException|Throwable
      */
-    public function getFormJson(string $url, array $data = [], null|int $timeout = null, array $headers = []): mixed
+    public static function getFormJson(string $url, array $data = [], null|int $timeout = null, array $headers = []): mixed
     {
-        return $this->requestAndResponseJson('GET', $url, $timeout, $headers, ['form_params' => $data]);
+        return self::requestJson('GET', $url, $timeout, $headers, ['form_params' => $data]);
     }
 
     /**
@@ -354,11 +339,11 @@ class HttpUtil
      * @param int|null $timeout
      * @param array    $headers
      * @return mixed
-     * @throws GuzzleException
+     * @throws GuzzleException|Throwable
      */
-    public function postFormJson(string $url, array $data = [], null|int $timeout = null, array $headers = []): mixed
+    public static function postFormJson(string $url, array $data = [], null|int $timeout = null, array $headers = []): mixed
     {
-        return $this->requestAndResponseJson('POST', $url, $timeout, $headers, ['form_params' => $data]);
+        return self::requestJson('POST', $url, $timeout, $headers, ['form_params' => $data]);
     }
 
     /**
@@ -368,11 +353,11 @@ class HttpUtil
      * @param int|null $timeout
      * @param array    $headers
      * @return mixed
-     * @throws GuzzleException
+     * @throws GuzzleException|Throwable
      */
-    public function putFormJson(string $url, array $data = [], null|int $timeout = null, array $headers = []): mixed
+    public static function putFormJson(string $url, array $data = [], null|int $timeout = null, array $headers = []): mixed
     {
-        return $this->requestAndResponseJson('PUT', $url, $timeout, $headers, ['form_params' => $data]);
+        return self::requestJson('PUT', $url, $timeout, $headers, ['form_params' => $data]);
     }
 
     /**
@@ -382,11 +367,11 @@ class HttpUtil
      * @param int|null $timeout
      * @param array    $headers
      * @return mixed
-     * @throws GuzzleException
+     * @throws GuzzleException|Throwable
      */
-    public function headFormJson(string $url, array $data = [], null|int $timeout = null, array $headers = []): mixed
+    public static function headFormJson(string $url, array $data = [], null|int $timeout = null, array $headers = []): mixed
     {
-        return $this->requestAndResponseJson('HEAD', $url, $timeout, $headers, ['form_params' => $data]);
+        return self::requestJson('HEAD', $url, $timeout, $headers, ['form_params' => $data]);
     }
 
     /**
@@ -396,11 +381,11 @@ class HttpUtil
      * @param int|null $timeout
      * @param array    $headers
      * @return mixed
-     * @throws GuzzleException
+     * @throws GuzzleException|Throwable
      */
-    public function patchFormJson(string $url, array $data = [], null|int $timeout = null, array $headers = []): mixed
+    public static function patchFormJson(string $url, array $data = [], null|int $timeout = null, array $headers = []): mixed
     {
-        return $this->requestAndResponseJson('PATCH', $url, $timeout, $headers, ['form_params' => $data]);
+        return self::requestJson('PATCH', $url, $timeout, $headers, ['form_params' => $data]);
     }
 
     /**
@@ -410,11 +395,11 @@ class HttpUtil
      * @param int|null $timeout
      * @param array    $headers
      * @return mixed
-     * @throws GuzzleException
+     * @throws GuzzleException|Throwable
      */
-    public function deleteFormJson(string $url, array $data = [], null|int $timeout = null, array $headers = []): mixed
+    public static function deleteFormJson(string $url, array $data = [], null|int $timeout = null, array $headers = []): mixed
     {
-        return $this->requestAndResponseJson('DELETE', $url, $timeout, $headers, ['form_params' => $data]);
+        return self::requestJson('DELETE', $url, $timeout, $headers, ['form_params' => $data]);
     }
 
     /**
@@ -424,11 +409,11 @@ class HttpUtil
      * @param int|null $timeout
      * @param array    $headers
      * @return mixed
-     * @throws GuzzleException
+     * @throws GuzzleException|Throwable
      */
-    public function getJsonSuccess(string $url, array $data = [], null|int $timeout = null, array $headers = []): mixed
+    public static function getJsonSuccess(string $url, array $data = [], null|int $timeout = null, array $headers = []): mixed
     {
-        return $this->requestAndResponseSuccess('GET', $url, $timeout, $headers, ['json' => $data]);
+        return self::requestSuccess('GET', $url, $timeout, $headers, ['json' => $data]);
     }
 
     /**
@@ -438,11 +423,11 @@ class HttpUtil
      * @param int|null $timeout
      * @param array    $headers
      * @return mixed
-     * @throws GuzzleException
+     * @throws GuzzleException|Throwable
      */
-    public function postJsonSuccess(string $url, array $data = [], null|int $timeout = null, array $headers = []): mixed
+    public static function postJsonSuccess(string $url, array $data = [], null|int $timeout = null, array $headers = []): mixed
     {
-        return $this->requestAndResponseSuccess('POST', $url, $timeout, $headers, ['json' => $data]);
+        return self::requestSuccess('POST', $url, $timeout, $headers, ['json' => $data]);
     }
 
     /**
@@ -452,11 +437,11 @@ class HttpUtil
      * @param int|null $timeout
      * @param array    $headers
      * @return mixed
-     * @throws GuzzleException
+     * @throws GuzzleException|Throwable
      */
-    public function putJsonSuccess(string $url, array $data = [], null|int $timeout = null, array $headers = []): mixed
+    public static function putJsonSuccess(string $url, array $data = [], null|int $timeout = null, array $headers = []): mixed
     {
-        return $this->requestAndResponseSuccess('PUT', $url, $timeout, $headers, ['json' => $data]);
+        return self::requestSuccess('PUT', $url, $timeout, $headers, ['json' => $data]);
     }
 
     /**
@@ -466,11 +451,11 @@ class HttpUtil
      * @param int|null $timeout
      * @param array    $headers
      * @return mixed
-     * @throws GuzzleException
+     * @throws GuzzleException|Throwable
      */
-    public function headJsonSuccess(string $url, array $data = [], null|int $timeout = null, array $headers = []): mixed
+    public static function headJsonSuccess(string $url, array $data = [], null|int $timeout = null, array $headers = []): mixed
     {
-        return $this->requestAndResponseSuccess('HEAD', $url, $timeout, $headers, ['json' => $data]);
+        return self::requestSuccess('HEAD', $url, $timeout, $headers, ['json' => $data]);
     }
 
     /**
@@ -480,11 +465,11 @@ class HttpUtil
      * @param int|null $timeout
      * @param array    $headers
      * @return mixed
-     * @throws GuzzleException
+     * @throws GuzzleException|Throwable
      */
-    public function patchJsonSuccess(string $url, array $data = [], null|int $timeout = null, array $headers = []): mixed
+    public static function patchJsonSuccess(string $url, array $data = [], null|int $timeout = null, array $headers = []): mixed
     {
-        return $this->requestAndResponseSuccess('PATCH', $url, $timeout, $headers, ['json' => $data]);
+        return self::requestSuccess('PATCH', $url, $timeout, $headers, ['json' => $data]);
     }
 
     /**
@@ -494,10 +479,10 @@ class HttpUtil
      * @param int|null $timeout
      * @param array    $headers
      * @return mixed
-     * @throws GuzzleException
+     * @throws GuzzleException|Throwable
      */
-    public function deleteJsonSuccess(string $url, array $data = [], null|int $timeout = null, array $headers = []): mixed
+    public static function deleteJsonSuccess(string $url, array $data = [], null|int $timeout = null, array $headers = []): mixed
     {
-        return $this->requestAndResponseSuccess('DELETE', $url, $timeout, $headers, ['json' => $data]);
+        return self::requestSuccess('DELETE', $url, $timeout, $headers, ['json' => $data]);
     }
 }
