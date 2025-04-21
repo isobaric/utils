@@ -19,15 +19,69 @@ class HttpUtil
     public static string $successMessageIndex = 'message';
 
     // success方法，返回值中没有表示code码的字段时，默认的赋值
-    public static int $defaultResponseCode = 200;
+    public static int $defaultCode = 200;
 
     // success方法，返回值中没有表示提示消息的字段时，默认的赋值
-    public static string $defaultResponseMessage = '';
+    public static string $defaultMessage = '';
 
     // success方法，默认的成功码
-    public static array $defaultSuccessCode = [
+    public static array $defaultSuccessCodes = [
         200
     ];
+
+    /**
+     * @param string $index
+     * @return void
+     */
+    public static function setSuccessCodeIndex(string $index = 'code'): void
+    {
+        self::$successCodeIndex = $index;
+    }
+
+    /**
+     * @param string $index
+     * @return void
+     */
+    public static function setSuccessDataIndex(string $index = 'data'): void
+    {
+        self::$successDataIndex = $index;
+    }
+
+    /**
+     * @param string $index
+     * @return void
+     */
+    public static function setSuccessMessageIndex(string $index = 'message'): void
+    {
+        self::$successMessageIndex = $index;
+    }
+
+    /**
+     * @param int $code
+     * @return void
+     */
+    public static function setDefaultCode(int $code = 200): void
+    {
+        self::$defaultCode = $code;
+    }
+
+    /**
+     * @param string $message
+     * @return void
+     */
+    public static function setDefaultMessage(string $message = ''): void
+    {
+        self::$defaultMessage = $message;
+    }
+
+    /**
+     * @param array $codes
+     * @return void
+     */
+    public static function setDefaultSuccessCodes(array $codes = [200]): void
+    {
+        self::$defaultSuccessCodes = $codes;
+    }
 
     /**
      * 异常信息记录
@@ -151,13 +205,13 @@ class HttpUtil
         }
 
         // code码
-        (int)$code = $response[self::$successCodeIndex] ?? self::$defaultResponseCode;
+        (int)$code = $response[self::$successCodeIndex] ?? self::$defaultCode;
 
         // 提示消息
-        (string)$message = $response[self::$successMessageIndex] ?? self::$defaultResponseMessage;
+        (string)$message = $response[self::$successMessageIndex] ?? self::$defaultMessage;
 
         // 成功时 返回指定的消息
-        if (in_array($code, self::$defaultSuccessCode)) {
+        if (in_array($code, self::$defaultSuccessCodes)) {
             return $response[self::$successDataIndex] ?? [];
         }
 
