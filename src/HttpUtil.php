@@ -19,13 +19,13 @@ class HttpUtil
     public static string $successMessageIndex = 'message';
 
     // success方法，返回值中没有表示code码的字段时，默认的赋值
-    public static int $defaultCode = 200;
+    public static int $successDefaultCode = 200;
 
     // success方法，返回值中没有表示提示消息的字段时，默认的赋值
-    public static string $defaultMessage = '';
+    public static string $successDefaultMessage = '';
 
-    // success方法，默认的成功码
-    public static array $defaultSuccessCodes = [
+    // success方法，默认的成功码|
+    public static array $successCodes = [
         200
     ];
 
@@ -60,27 +60,28 @@ class HttpUtil
      * @param int $code
      * @return void
      */
-    public static function setDefaultCode(int $code = 200): void
+    public static function setSuccessDefaultCode(int $code = 200): void
     {
-        self::$defaultCode = $code;
+        self::$successDefaultCode = $code;
+        self::$successCodes = [$code];
     }
 
     /**
      * @param string $message
      * @return void
      */
-    public static function setDefaultMessage(string $message = ''): void
+    public static function setSuccessDefaultMessage(string $message = ''): void
     {
-        self::$defaultMessage = $message;
+        self::$successDefaultMessage = $message;
     }
 
     /**
      * @param array $codes
      * @return void
      */
-    public static function setDefaultSuccessCodes(array $codes = [200]): void
+    public static function setSuccessCodes(int ...$codes): void
     {
-        self::$defaultSuccessCodes = $codes;
+        self::$successCodes = $codes;
     }
 
     /**
@@ -226,14 +227,14 @@ class HttpUtil
         }
 
         // code码
-        (int)$code = $response[self::$successCodeIndex] ?? self::$defaultCode;
+        (int)$code = $jsonResponse[self::$successCodeIndex] ?? self::$successDefaultCode;
 
         // 提示消息
-        (string)$message = $response[self::$successMessageIndex] ?? self::$defaultMessage;
+        (string)$message = $jsonResponse[self::$successMessageIndex] ?? self::$successDefaultMessage;
 
         // 成功时 返回指定的消息
-        if (in_array($code, self::$defaultSuccessCodes)) {
-            return $response[self::$successDataIndex] ?? [];
+        if (in_array($code, self::$successCodes)) {
+            return $jsonResponse[self::$successDataIndex] ?? [];
         }
 
         // 异常信息记录
