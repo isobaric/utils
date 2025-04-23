@@ -26,7 +26,7 @@ class GitFoundation
     protected string $commendPull = '[git] pull [repository] [branch]';
 
     // cherry -v
-    protected string $commentCherry = '[git] cherry -v [compare] [flag]';
+    protected string $commentCherry = '[git] cherry -v [upstream] [head]';
 
     // git show
     protected string $commendShowCommit = '[git] --no-pager show [commit] -s';
@@ -97,7 +97,7 @@ class GitFoundation
      * @param string $commitId
      * @return string
      */
-    protected function commitIdReplace(string $commend, string $commitId): string
+    protected function commitReplace(string $commend, string $commitId): string
     {
         return $this->replaceGitCommend($commend, ['[commit]'], [$commitId]);
     }
@@ -105,13 +105,13 @@ class GitFoundation
     /**
      * 分支名称替换
      * @param string $commend
-     * @param string $compare
-     * @param string $flag
+     * @param string $upstream
+     * @param string $head
      * @return string
      */
-    protected function cherryReplace(string $commend, string $compare, string $flag): string
+    protected function cherryReplace(string $commend, string $upstream, string $head): string
     {
-        return $this->replaceGitCommend($commend, ['[compare]', '[flag]'], [$compare, $flag]);
+        return $this->replaceGitCommend($commend, ['[upstream]', '[head]'], [$upstream, $head]);
     }
 
     /**

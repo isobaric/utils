@@ -33,6 +33,27 @@ class GitUtil extends GitFoundation
     }
 
     /**
+     * 分支比对
+     * @param string $upstream 比较的分支
+     * @param string $head    被比较的分支
+     * @return string 返回$head中存在但$upstream中缺少的提交
+     */
+    public function cherry(string $upstream, string $head): string
+    {
+        return $this->executeGitCommend($this->cherryReplace($this->commentCherry, $upstream, $head));
+    }
+
+    /**
+     * 查看commitID的提交信息
+     * @param string $commitId
+     * @return string
+     */
+    public function showCommit(string $commitId): string
+    {
+        return $this->executeGitCommend($this->commitReplace($this->commendShowCommit, $commitId));
+    }
+
+    /**
      * 文件最近修改时间
      * @param string      $filename
      * @param string|null $format   值为Null时，返回时间戳
