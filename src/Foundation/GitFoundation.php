@@ -181,36 +181,37 @@ class GitFoundation
     /**
      * 执行git命令
      * @param string $commend
-     * @return string
+     * @param bool   $getOutput
+     * @return string|array
      */
-    protected function executeGitCommend(string $commend): string
+    protected function executeGitCommend(string $commend, bool $getOutput = false): string|array
     {
         // 检查工作目录
         $this->checkApplicationRoot();
 
         $executeCommend = 'cd ' . $this->applicationRoot . ' && ' . $commend;
+        $response = exec($executeCommend, $output);
 
         if ($this->debug) {
             $this->outputEcho($executeCommend);
-
-            $response = exec($executeCommend, $output);
-
             $this->outputEcho($output);
-            unset($output);
-        } else {
-            $response = exec($executeCommend);
         }
 
+        if ($getOutput) {
+            $response = $output;
+        }
+        unset($output);
         return $response;
     }
 
     /**
      * 内容输出
      * @param string|array|null $output
-     * @param string            $filename
+     * @param string            $filename 输入内容到文件
+     * @param string            $prefix   输出的内容前缀
      * @return void
      */
-    public function outputEcho(null|string|array $output, string $filename = ''): void
+    public function outputEcho(null|string|array $output, string $filename = '', string $prefix = ''): void
     {
         if (!is_array($output)) {
             $output = [$output];
@@ -222,7 +223,11 @@ class GitFoundation
             if (is_null($item)) {
                 $content = PHP_EOL;
             } else {
-                $content = date('Y-m-d H:i:s') . ' ' . $item . PHP_EOL;
+                if ($prefix == '') {
+                    $content = date('Y-m-d H:i:s') . ' ' . $item . PHP_EOL;
+                } else {
+                    $content = $prefix . ' ' . date('Y-m-d H:i:s') . ' ' . $item . PHP_EOL;
+                }
             }
 
             if ($filename != '') {

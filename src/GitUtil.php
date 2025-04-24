@@ -56,6 +56,17 @@ class GitUtil extends GitFoundation
     }
 
     /**
+     * 分支比对
+     * @param string $upstream 比较的分支
+     * @param string $head    被比较的分支
+     * @return array 返回$head中存在但$upstream中缺少的提交
+     */
+    public function cherryOutput(string $upstream, string $head): array
+    {
+        return $this->executeGitCommend($this->cherryReplace($this->commentCherry, $upstream, $head), true);
+    }
+
+    /**
      * 查看commitID的提交信息
      * @param string $commitId
      * @return string
