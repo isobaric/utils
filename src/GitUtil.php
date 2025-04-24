@@ -37,43 +37,35 @@ class GitUtil extends GitFoundation
     /**
      * 拉取远程分支
      * @param string $branch
-     * @return string
+     * @param bool   $output
+     * @return string|array     $output=true时，返回数组；$output=false时，返回字符串；
      */
-    public function pull(string $branch = 'master'): string
+    public function pull(string $branch = 'master', bool $output = false): string|array
     {
-        return $this->executeGitCommend($this->pullReplace($this->commendPull, $branch));
+        return $this->executeGitCommend($this->pullReplace($this->commendPull, $branch), $output);
     }
 
     /**
      * 分支比对
      * @param string $upstream 比较的分支
      * @param string $head    被比较的分支
-     * @return string 返回$head中存在但$upstream中缺少的提交
+     * @param bool   $output
+     * @return string|array $output=true时，返回数组；$output=false时，返回字符串；
      */
-    public function cherry(string $upstream, string $head): string
+    public function cherry(string $upstream, string $head, bool $output = false): string|array
     {
-        return $this->executeGitCommend($this->cherryReplace($this->commentCherry, $upstream, $head));
-    }
-
-    /**
-     * 分支比对
-     * @param string $upstream 比较的分支
-     * @param string $head    被比较的分支
-     * @return array 返回$head中存在但$upstream中缺少的提交
-     */
-    public function cherryOutput(string $upstream, string $head): array
-    {
-        return $this->executeGitCommend($this->cherryReplace($this->commentCherry, $upstream, $head), true);
+        return $this->executeGitCommend($this->cherryReplace($this->commentCherry, $upstream, $head), $output);
     }
 
     /**
      * 查看commitID的提交信息
      * @param string $commitId
-     * @return string
+     * @param bool   $output
+     * @return string|array     $output=true时，返回数组；$output=false时，返回字符串；
      */
-    public function showCommit(string $commitId): string
+    public function showCommit(string $commitId, bool $output = false): string|array
     {
-        return $this->executeGitCommend($this->commitReplace($this->commendShowCommit, $commitId));
+        return $this->executeGitCommend($this->commitReplace($this->commendShowCommit, $commitId), $output);
     }
 
     /**

@@ -6,6 +6,9 @@ use RuntimeException;
 
 class GitFoundation
 {
+    // 当前一次执行的命令
+    public string $execCommend = '';
+
     // true输出调试信息
     public bool $debug;
 
@@ -85,6 +88,15 @@ class GitFoundation
     public function setGit(string $git): void
     {
         $this->git = $git;
+    }
+
+    /**
+     * 获取当前一次执行的命令
+     * @return string
+     */
+    public function getExecCommend(): string
+    {
+        return $this->execCommend;
     }
 
     /**
@@ -188,19 +200,22 @@ class GitFoundation
     {
         // 检查工作目录
         $this->checkApplicationRoot();
-
-        $executeCommend = 'cd ' . $this->applicationRoot . ' && ' . $commend;
-        $response = exec($executeCommend, $output);
+        $this->execCommend = 'cd ' . $this->applicationRoot . ' && ' . $commend;
 
         if ($this->debug) {
-            $this->outputEcho($executeCommend);
-            $this->outputEcho($output);
+            $this->outPrint($this->execCommend);
         }
 
         if ($getOutput) {
-            $response = $output;
+            exec($this->execCommend, $response);
+        } else {
+            $response = exec($this->execCommend);
         }
-        unset($output);
+
+        if ($this->debug) {
+            $this->outPrint($response);
+        }
+
         return $response;
     }
 
@@ -211,7 +226,7 @@ class GitFoundation
      * @param string            $prefix   输出的内容前缀
      * @return void
      */
-    public function outputEcho(null|string|array $output, string $filename = '', string $prefix = ''): void
+    public function outPrint(null|string|array $output, string $filename = '', string $prefix = ''): void
     {
         if (!is_array($output)) {
             $output = [$output];
