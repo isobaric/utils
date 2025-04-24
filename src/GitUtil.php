@@ -7,6 +7,18 @@ use Isobaric\Utils\Foundation\GitFoundation;
 class GitUtil extends GitFoundation
 {
     /**
+     * @param string $applicationRoot
+     * @param bool   $debug
+     */
+    public function __construct(string $applicationRoot = '', bool $debug = false)
+    {
+        if ($applicationRoot != '') {
+            $this->setApplicationRoot($applicationRoot);
+        }
+        $this->debug = $debug;
+    }
+
+    /**
      * 分支切换
      * @param string $branch
      * @return bool
@@ -56,10 +68,10 @@ class GitUtil extends GitFoundation
     /**
      * 文件最近修改时间
      * @param string      $filename
-     * @param string|null $format   值为Null时，返回时间戳
+     * @param string|null $format   值为Null时，返回时间戳；例：$format = 'Y-m-d H:i:s'
      * @return string|int
      */
-    public function fileLastModify(string $filename, null|string $format = 'Y-m-d H:i:s'): string|int
+    public function fileLastModify(string $filename, null|string $format = null): string|int
     {
         $modifyDate = $this->executeGitCommend($this->filenameReplace($this->commendFileLastModify, $filename));
         if (empty($modifyDate)) {

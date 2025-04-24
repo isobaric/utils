@@ -2,18 +2,20 @@
 
 namespace Isobaric\Utils\Foundation;
 
+use RuntimeException;
+
 class GitFoundation
 {
     // true输出调试信息
-    public bool $debug = false;
+    public bool $debug;
 
     // git命令的绝对路径
     public string $git = '/usr/bin/git';
 
     // 项目根目录(绝对路径)
-    public string $applicationPath = '';
+    public string $applicationRoot = '';
 
-    // 远程仓库 TODO
+    // 远程仓库
     public string $repository = 'origin';
 
     // branch
@@ -36,6 +38,54 @@ class GitFoundation
 
     // 文件commit
     protected string $commendFileBlame = '[git] blame -L [line],[line] [filename]';
+
+    /**
+     * 设置工作目录
+     * @param string $applicationRoot
+     * @return void
+     */
+    public function setApplicationRoot(string $applicationRoot): void
+    {
+        $this->applicationRoot = $applicationRoot;
+        $this->checkApplicationRoot();
+    }
+
+    /**
+     * @return void
+     */
+    protected function checkApplicationRoot(): void
+    {
+        if (!is_dir($this->applicationRoot)) {
+            throw new RuntimeException('无效的路径：' . $this->applicationRoot);
+        }
+    }
+
+    /**
+     * @param bool $debug
+     * @return void
+     */
+    public function setDebug(bool $debug): void
+    {
+        $this->debug = $debug;
+    }
+
+    /**
+     * @param string $repository
+     * @return void
+     */
+    public function setRepository(string $repository): void
+    {
+        $this->repository = $repository;
+    }
+
+    /**
+     * @param string $git
+     * @return void
+     */
+    public function setGit(string $git): void
+    {
+        $this->git = $git;
+    }
 
     /**
      * @param string $commend
@@ -135,15 +185,20 @@ class GitFoundation
      */
     protected function executeGitCommend(string $commend): string
     {
-        $checkoutCommend = 'cd ' . $this->applicationPath . ' && ' . $commend;
+        // 检查工作目录
+        $this->checkApplicationRoot();
+
+        $executeCommend = 'cd ' . $this->applicationRoot . ' && ' . $commend;
 
         if ($this->debug) {
-            $response = exec($checkoutCommend, $output);
+            $this->outputEcho($executeCommend);
+
+            $response = exec($executeCommend, $output);
 
             $this->outputEcho($output);
             unset($output);
         } else {
-            $response = exec($checkoutCommend);
+            $response = exec($executeCommend);
         }
 
         return $response;
@@ -155,13 +210,11 @@ class GitFoundation
      * @param string            $filename
      * @return void
      */
-    protected function outputEcho(null|string|array $output, string $filename = ''): void
+    public function outputEcho(null|string|array $output, string $filename = ''): void
     {
         if (!is_array($output)) {
             $output = [$output];
         }
-
-        //$logPrefix = date('Y-m-d H:i:s') . ' ' . $this->application . ' | ';
 
         foreach ($output as $item) {
 
@@ -169,7 +222,7 @@ class GitFoundation
             if (is_null($item)) {
                 $content = PHP_EOL;
             } else {
-                $content = $item . PHP_EOL;
+                $content = date('Y-m-d H:i:s') . ' ' . $item . PHP_EOL;
             }
 
             if ($filename != '') {
