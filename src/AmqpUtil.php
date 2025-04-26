@@ -246,6 +246,11 @@ class AmqpUtil
      * 设置exchange
      * @param string      $exchangeName 交换机名称
      * @param string|null $exchangeType 交换机类型；当前参数仅用于消费者；
+     *  exchangeType取值：
+     *      AMQP_EX_TYPE_DIRECT     直连
+     *      AMQP_EX_TYPE_FANOUT     扇形
+     *      AMQP_EX_TYPE_HEADERS    头部
+     *      AMQP_EX_TYPE_TOPIC      主题
      * @param string|null $flag 交换机flag；当前参数仅用于消费者；
      *   flag取值：
      *       AMQP_DURABLE 持久的交换和队列将在代理重启后幸存下来，并包含其所有数据。
