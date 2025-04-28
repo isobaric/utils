@@ -4,7 +4,7 @@ namespace Isobaric\Utils\Exceptions;
 
 use Throwable;
 
-class ElasticsearchException extends \RuntimeException
+class ConnectionException extends \RuntimeException
 {
     /**
      * Construct the exception. Note: The message is NOT binary safe.
@@ -13,7 +13,7 @@ class ElasticsearchException extends \RuntimeException
      * @param int            $code     [optional] The Exception code.
      * @param null|Throwable $previous [optional] The previous throwable used for the exception chaining.
      */
-    public function __construct(string $message = '', int $code = ExceptionCode::ELASTICSEARCH_ERROR_CODE, Throwable $previous = null)
+    public function __construct(string $message = '', int $code = ExceptionCode::CONNECTION_ERROR_CODE, Throwable $previous = null)
     {
         parent::__construct($message, $code, $previous);
     }

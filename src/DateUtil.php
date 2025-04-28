@@ -5,6 +5,44 @@ namespace Isobaric\Utils;
 class DateUtil
 {
     /**
+     * 获取毫妙
+     * @return int
+     */
+    public static function millisecond(): int
+    {
+        return microtime(true) * 1000;
+    }
+
+    /**
+     * 格式化秒
+     * @param int|float|null $second    时间戳；
+     *                                  如果传参是int则返回时分秒
+     *                                  如果传参是float则返回时分秒毫秒
+     *                                  如果传参是null则默认为取前时间戳，返回时分秒
+     * @param string         $separator 时分秒的分隔符
+     * @return string
+     */
+    public static function secondToTime(null|int|float $second = null, string $separator = ':'): string
+    {
+        if (is_null($second)) {
+            $second = time();
+        }
+
+        $hours = floor($second / 3600);
+        $minutes = floor(($second % 3600) / 60);
+        $seconds = $second % 60;
+
+        $format = '%02d' . $separator . '%02d' . $separator . '%02d';
+
+        if (is_float($second)) {
+            $millisecond = substr(number_format(fmod($second, 1), 3), 1);
+            $format .= $millisecond;
+        }
+
+        return sprintf($format, $hours, $minutes, $seconds);
+    }
+
+    /**
      * 获取$date的DateTime对象
      *
      * @param string|null $date     日期或日期表达式；$date为空返回false
@@ -123,16 +161,6 @@ class DateUtil
     public static function formatDatetime(?string $date): string
     {
         return self::format($date, 'Y-m-d H:i:s');
-    }
-
-    /**
-     * 获取毫秒
-     *
-     * @return int
-     */
-    public static function millisecond(): int
-    {
-        return microtime(true) * 1000;
     }
 
     /**
@@ -775,21 +803,5 @@ class DateUtil
         }
 
         return $secondDatetime->getTimestamp() - $firstDatetime->getTimestamp();
-    }
-
-    /**
-     * 格式化秒
-     *
-     * @param int|null $seconds
-     * @param string $separator 时分秒的分隔符
-     * @return string
-     */
-    public static function secondsToTime(?int $seconds, string $separator = ':'): string
-    {
-        if (is_null($seconds) || $seconds < 0) {
-            $seconds = 0;
-        }
-        $format = '%02d' . $separator . '%02d' . $separator . '%02d';
-        return sprintf($format, $seconds / 3600, ($seconds % 3600) / 60, $seconds % 60);
     }
 }
