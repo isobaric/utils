@@ -1,10 +1,10 @@
 <?php
 
-namespace Isobaric\Utils\Foundation;
+namespace Isobaric\Utils\Handler;
 
 use RuntimeException;
 
-class GitFoundation
+class GitHandler
 {
     // 当前一次执行的命令
     public string $execCommend = '';

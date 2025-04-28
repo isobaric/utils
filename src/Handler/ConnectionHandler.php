@@ -1,12 +1,12 @@
 <?php
 
-namespace Isobaric\Utils;
+namespace Isobaric\Utils\Handler;
 
 use Elasticsearch\Client;
 use Elasticsearch\ClientBuilder;
 use Isobaric\Utils\Exceptions\ConnectionException;
 
-class ConnectionPoolUtil
+class ConnectionHandler
 {
     /**
      * 连接池

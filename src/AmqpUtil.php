@@ -2,15 +2,16 @@
 
 namespace Isobaric\Utils;
 
-use AMQPConnection;
 use AMQPChannel;
+use AMQPChannelException;
+use AMQPConnection;
+use AMQPConnectionException;
+use AMQPEnvelopeException;
 use AMQPExchange;
+use AMQPExchangeException;
 use AMQPQueue;
 use AMQPQueueException;
-use AMQPChannelException;
-use AMQPExchangeException;
-use AMQPEnvelopeException;
-use AMQPConnectionException;
+use Isobaric\Utils\Handler\ConnectionHandler;
 
 
 class AmqpUtil
@@ -180,7 +181,7 @@ class AmqpUtil
         }
 
         // 建立连接
-        $this->connection = ConnectionPoolUtil::amqp($this->credentials);
+        $this->connection = ConnectionHandler::amqp($this->credentials);
 
         // 初始化channel对象
         $this->channel = new AMQPChannel($this->connection);

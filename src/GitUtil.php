@@ -2,9 +2,9 @@
 
 namespace Isobaric\Utils;
 
-use Isobaric\Utils\Foundation\GitFoundation;
+use Isobaric\Utils\Handler\GitHandler;
 
-class GitUtil extends GitFoundation
+class GitUtil extends GitHandler
 {
     /**
      * @param string $applicationRoot

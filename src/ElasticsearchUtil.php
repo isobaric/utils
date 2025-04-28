@@ -2,8 +2,9 @@
 
 namespace Isobaric\Utils;
 
-use Isobaric\Utils\Exceptions\ElasticsearchException;
 use Elasticsearch\Client;
+use Isobaric\Utils\Exceptions\ElasticsearchException;
+use Isobaric\Utils\Handler\ConnectionHandler;
 
 class ElasticsearchUtil
 {
@@ -830,7 +831,7 @@ class ElasticsearchUtil
         } else {
             $hosts = $this->hosts;
         }
-        return ConnectionPoolUtil::elasticsearch($hosts);
+        return ConnectionHandler::elasticsearch($hosts);
     }
 
     /**
