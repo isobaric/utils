@@ -804,4 +804,21 @@ class DateUtil
 
         return $secondDatetime->getTimestamp() - $firstDatetime->getTimestamp();
     }
+
+    /**
+     * 讲秒转换为 时分秒格式
+     * @param int $seconds
+     * @return string
+     */
+    public static function secondsToTime(int $seconds): string
+    {
+        if (!$seconds) {
+            return '00:00:00';
+        }
+        $hours   = floor($seconds / 3600);
+        $minutes = floor(($seconds % 3600) / 60);
+        $seconds = $seconds % 60;
+
+        return sprintf("%02d:%02d:%02d", $hours, $minutes, $seconds);
+    }
 }
