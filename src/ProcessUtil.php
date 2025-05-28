@@ -94,17 +94,17 @@ class ProcessUtil
         $fail = 0;
         $processIdList = [];
 
-        // 仅派发一个进程
-        if (!is_array($data) || $split == 0) {
-            self::dispatchForkCallback($fail, $storageFile, $processIdList, $callback, $data);
-            goto DISPATCH_FORK_END;
-        }
-
         if (is_null($child)) {
             $split = max(1, $split);
         } else {
             $child = max(1, $child);
             $split = ceil(count($data) / $child);
+        }
+
+        // 仅派发一个进程
+        if (!is_array($data) || $split == 0) {
+            self::dispatchForkCallback($fail, $storageFile, $processIdList, $callback, $data);
+            goto DISPATCH_FORK_END;
         }
 
         // 数组时 开始派发数据
