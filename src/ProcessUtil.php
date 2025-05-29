@@ -67,10 +67,13 @@ class ProcessUtil extends ProcessHandler
         $uniqueSign = md5(json_encode($call) . getmypid());
 
         // 创建临时存储目录 用于存储程序的执行结果 | 如果创建失败则 返回值data为空
-        $filename = '';
-        if (!is_dir($this->storagePath)) {
-            if (@mkdir($this->storagePath, 0777, true)) {
+        if (is_dir($this->storagePath)) {
+            $filename = $uniqueSign . '.log';
+        } else {
+            if (@mkdir($this->storagePath, 0755, true)) {
                 $filename = $uniqueSign . '.log';
+            } else {
+                $filename = '';
             }
         }
 
@@ -93,6 +96,7 @@ class ProcessUtil extends ProcessHandler
 
                 // 需要的最小进程数
                 $number = (int)floor($elementCount / $number);
+                $number = max(1, $number);
 
                 // 如果有余数，则将余数派发给进程（靠前的每个子进程分别接收一个余数元素）
                 if ($elementCount > $number) {
