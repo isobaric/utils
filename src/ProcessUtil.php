@@ -194,7 +194,7 @@ class ProcessUtil
 
         $dispatchResult['exit'] = $exit;
         $dispatchResult['error'] = $error;
-        $dispatchResult['data'] = self::getProcessResponse($callbackUniqueSign, $processIdList);
+        $dispatchResult['data'] = self::getProcessResponse($callbackUniqueSign . '.log', $dispatchResult['process_id']);
 
         return $dispatchResult;
     }
@@ -231,27 +231,22 @@ class ProcessUtil
                 $response = $throwable;
             }
 
-            self::setProcessResponse($pid, $filename, $response);
+            self::setProcessResponse(getmypid(), $filename, $response);
             exit(0);
         }
     }
 
     /**
      * 临时存储指定进程的内容到文件中
-     * @param int    $pid
-     * @param string $filename
-     * @param mixed  $response
+     * @param int|false $pid
+     * @param string    $filename
+     * @param mixed     $response
      * @return void
      */
-    private static function setProcessResponse(int $pid, string $filename, mixed $response): void
+    private static function setProcessResponse(int|bool $pid, string $filename, mixed $response): void
     {
-        if ($filename != '' && !is_null($response)) {
-
-            $file = self::$tmpStoragePath . $pid . $filename;
-
-            if (is_writable($file)) {
-                file_put_contents($file, serialize($response) . self::$processEol, FILE_APPEND);
-            }
+        if ($pid !== false && $filename != '' && !is_null($response)) {
+            file_put_contents(self::$tmpStoragePath . $pid . $filename, serialize($response) . self::$processEol, FILE_APPEND);
         }
     }
 
