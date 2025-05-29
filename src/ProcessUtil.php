@@ -280,7 +280,8 @@ class ProcessUtil
 
             $tempContent = explode(self::$processEol, $storageContent);
             array_pop($tempContent);
-            array_push($response, ...array_map('unserialize', $tempContent));
+            $tempContent = array_map('unserialize', $tempContent);
+            array_push($response, ...$tempContent);
             unset($tempContent);
         }
 
@@ -294,12 +295,8 @@ class ProcessUtil
     private static function isEnableTempStorage(): bool
     {
         // 如果临时目录存在 且可写，则将内容存储到临时文件中 并返回 file_exists
-        if (!file_exists(self::$tmpStoragePath)) {
-            @mkdir(self::$tmpStoragePath);
-        }
-
-        if (!is_writable(self::$tmpStoragePath)) {
-            return false;
+        if (!is_dir(self::$tmpStoragePath)) {
+            return @mkdir(self::$tmpStoragePath, 0777, true);
         }
 
         return true;
