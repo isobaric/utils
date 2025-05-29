@@ -246,7 +246,12 @@ class ProcessUtil
     private static function setProcessResponse(int $pid, string $filename, mixed $response): void
     {
         if ($filename != '' && !is_null($response)) {
-            file_put_contents(self::$tmpStoragePath . $pid . $filename, serialize($response) . self::$processEol, FILE_APPEND);
+
+            $file = self::$tmpStoragePath . $pid . $filename;
+
+            if (is_writable($file)) {
+                file_put_contents($file, serialize($response) . self::$processEol, FILE_APPEND);
+            }
         }
     }
 
@@ -267,13 +272,13 @@ class ProcessUtil
         $response = [];
         foreach ($processIdList as $processId) {
 
-            $tmpFile = self::$tmpStoragePath . $processId . $filename;
-            if ($tmpFile == '' || !is_file($tmpFile) || !is_readable($tmpFile)) {
+            $file = self::$tmpStoragePath . $processId . $filename;
+            if (!is_file($file) || !is_readable($file)) {
                 return [];
             }
 
-            $storageContent = file_get_contents($tmpFile);
-            @unlink($tmpFile);
+            $storageContent = file_get_contents($file);
+            @unlink($file);
             if ($storageContent === false) {
                 continue;
             }
