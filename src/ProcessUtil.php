@@ -13,10 +13,10 @@ class ProcessUtil
     private static string $processEol = "###PROCESS_UTIL###";
 
     /**
-     * 临时存储目录
+     * 临时存储目录 不存在则创建
      * @var string
      */
-    private static string $storage = '/tmp/';
+    private static string $tmpStoragePath = '/tmp/isobaric/';
 
     /**
      * 进程结果值
@@ -89,7 +89,12 @@ class ProcessUtil
     {
         // 如果临时目录存在 且可写，则将内容存储到临时文件中 并返回
         $callbackUniqueSign = self::dispatchUniqueString($callback);
-        $storageFile = self::dispatchStorageFile($callbackUniqueSign);
+        // 创建临时存储目录
+        if (self::isEnableTempStorage()) {
+            $filename = $callbackUniqueSign . '.log';
+        } else {
+            $filename = '';
+        }
 
         $fail = 0;
         $processIdList = [];
@@ -103,7 +108,7 @@ class ProcessUtil
 
         // 仅派发一个进程
         if (!is_array($data) || $split == 0) {
-            self::dispatchForkCallback($fail, $storageFile, $processIdList, $callback, $data);
+            self::dispatchForkCallback($fail, $filename, $processIdList, $callback, $data);
             goto DISPATCH_FORK_END;
         }
 
@@ -117,7 +122,7 @@ class ProcessUtil
                 $item = array_splice($data, 0, $split);
             }
             // 派发数据
-            self::dispatchForkCallback($fail, $storageFile, $processIdList, $callback, $item);
+            self::dispatchForkCallback($fail, $filename, $processIdList, $callback, $item);
         }
 
         DISPATCH_FORK_END:
@@ -189,7 +194,7 @@ class ProcessUtil
 
         $dispatchResult['exit'] = $exit;
         $dispatchResult['error'] = $error;
-        $dispatchResult['data'] = self::dispatchResponseDecode($callbackUniqueSign);
+        $dispatchResult['data'] = self::getProcessResponse($callbackUniqueSign, $processIdList);
 
         return $dispatchResult;
     }
@@ -197,7 +202,7 @@ class ProcessUtil
     /**
      * 创建进程并派发任务
      * @param int      $fail
-     * @param string   $file
+     * @param string   $filename    存储进程执行结果的临时文件名称（不含路径）为空则不存储
      * @param array    $processIdList
      * @param callable $callback
      * @param mixed    ...$args
@@ -205,7 +210,7 @@ class ProcessUtil
      */
     private static function dispatchForkCallback(
         int &$fail,
-        string $file,
+        string $filename,
         array &$processIdList,
         callable $callback,
         mixed ...$args
@@ -226,31 +231,78 @@ class ProcessUtil
                 $response = $throwable;
             }
 
-            if ($file != '' && !is_null($response)) {
-                file_put_contents($file, serialize($response) . self::$processEol, FILE_APPEND);
-            }
+            self::setProcessResponse($pid, $filename, $response);
             exit(0);
         }
     }
 
     /**
-     * 用于临时存储子进程结果的文件
+     * 临时存储指定进程的内容到文件中
+     * @param int    $pid
      * @param string $filename
-     * @return string
+     * @param mixed  $response
+     * @return void
      */
-    private static function dispatchStorageFile(string $filename): string
+    private static function setProcessResponse(int $pid, string $filename, mixed $response): void
+    {
+        if ($filename != '' && !is_null($response)) {
+            file_put_contents(self::$tmpStoragePath . $pid . $filename, serialize($response) . self::$processEol, FILE_APPEND);
+        }
+    }
+
+    /**
+     * 解析进程返回结果
+     *  如果存储文件不存在 或者 内容为空，则返回空数组
+     *  如果存储文件存在 则将每一行的结果反序列化后返回
+     * @param string $filename
+     * @param array  $processIdList 进程ID
+     * @return array
+     */
+    private static function getProcessResponse(string $filename, array $processIdList = []): array
+    {
+        if (empty($processIdList)) {
+            $processIdList = [''];
+        }
+
+        $response = [];
+        foreach ($processIdList as $processId) {
+
+            $tmpFile = self::$tmpStoragePath . $processId . $filename;
+            if ($tmpFile == '' || !is_file($tmpFile) || !is_readable($tmpFile)) {
+                return [];
+            }
+
+            $storageContent = file_get_contents($tmpFile);
+            @unlink($tmpFile);
+            if ($storageContent === false) {
+                continue;
+            }
+
+            $tempContent = explode(self::$processEol, $storageContent);
+            array_pop($tempContent);
+            array_push($response, ...array_map('unserialize', $tempContent));
+            unset($tempContent);
+        }
+
+        return $response;
+    }
+
+    /**
+     * 用于临时存储子进程结果的目录
+     * @return bool
+     */
+    private static function isEnableTempStorage(): bool
     {
         // 如果临时目录存在 且可写，则将内容存储到临时文件中 并返回 file_exists
-        $cachePath = self::$storage . '/isobaric/';
-        if (!file_exists($cachePath)) {
-            @mkdir($cachePath);
+        if (!file_exists(self::$tmpStoragePath)) {
+            @mkdir(self::$tmpStoragePath);
         }
 
-        if (!is_writable($cachePath)) {
-            return '';
+        if (!is_writable(self::$tmpStoragePath)) {
+            return false;
         }
 
-        return $cachePath . $filename . '.log';
+        return true;
     }
 
     /**
@@ -261,30 +313,6 @@ class ProcessUtil
     private static function dispatchUniqueString(string|array|callable $data): string
     {
         return md5(json_encode($data) . getmypid());
-    }
-
-    /**
-     * 解析进程返回结果
-     *  如果存储文件不存在 或者 内容为空，则返回空数组
-     *  如果存储文件存在 则将每一行的结果反序列化后返回
-     * @param string $filename
-     * @return array
-     */
-    private static function dispatchResponseDecode(string $filename): array
-    {
-        $cacheFile = self::dispatchStorageFile($filename);
-        if ($cacheFile == '' || !is_file($cacheFile) || !is_readable($cacheFile)) {
-            return [];
-        }
-        $storage = file_get_contents($cacheFile);
-        @unlink($cacheFile);
-        if ($storage === false) {
-            return [];
-        }
-        $storageList = explode(self::$processEol, $storage);
-        array_pop($storageList);
-
-        return array_map('unserialize', $storageList);
     }
 
     /**
