@@ -59,6 +59,7 @@ class FileUtil
         if ($filename == '') {
             $filename = basename($url);
         }
+        $filename = rawurlencode($filename);
 
         // 允许任意来源跨域
         header("Access-Control-Allow-Origin: *");
