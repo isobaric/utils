@@ -39,8 +39,11 @@ class GitHandler
     // 文件最近一次修改日期
     protected string $commendFileLastModify = '[git] log -1 --format="%ad" -- [filename]';
 
-    // 文件commit
-    protected string $commendFileBlame = '[git] blame -L [line],[line] [filename]';
+    // 文件指定行的commit
+    protected string $commendLineBlame = '[git] blame -L [line],[line] [filename]';
+
+    // 文件的commit
+    protected string $commendFileBlame = '[git] blame [filename]';
 
     /**
      * 设置工作目录
@@ -210,10 +213,9 @@ class GitHandler
             exec($this->execCommend, $response);
         } else {
             $response = exec($this->execCommend);
-        }
-
-        if ($this->debug) {
-            $this->outPrint($response);
+            if ($this->debug) {
+                $this->outPrint($response);
+            }
         }
 
         return $response;

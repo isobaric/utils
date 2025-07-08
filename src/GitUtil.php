@@ -94,8 +94,18 @@ class GitUtil extends GitHandler
      * @param int    $line
      * @return string
      */
-    public function fileBlame(string $filename, int $line): string
+    public function lineBlame(string $filename, int $line): string
     {
-        return $this->executeGitCommend($this->blameReplace($this->commendFileBlame, $line, $filename));
+        return $this->executeGitCommend($this->blameReplace($this->commendLineBlame, $line, $filename));
+    }
+
+    /**
+     * 文件的blame
+     * @param string $filename
+     * @return array
+     */
+    public function fileBlame(string $filename): array
+    {
+        return $this->executeGitCommend($this->filenameReplace($this->commendFileBlame, $filename), true);
     }
 }
